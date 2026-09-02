@@ -128,3 +128,32 @@
     @apply font-sans;
   }
 }
+
+/* PWA & Mobile Optimizations */
+@supports (padding: max(0px)) {
+  .pb-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  .pt-safe {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+  .pl-safe {
+    padding-left: max(1rem, env(safe-area-inset-left));
+  }
+  .pr-safe {
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+}
+
+/* Prevent pull-to-refresh on mobile */
+body {
+  overscroll-behavior-y: contain;
+}
+
+/* PWA standalone mode */
+@media (display-mode: standalone) {
+  body {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}

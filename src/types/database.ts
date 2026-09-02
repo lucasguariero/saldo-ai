@@ -21,6 +21,7 @@ export interface Database {
           observacao: string | null;
           data_transacao: string;
           data_vencimento: string | null;
+          user_id: string | null;
         };
         Insert: {
           id?: string;
@@ -33,6 +34,7 @@ export interface Database {
           observacao?: string | null;
           data_transacao: string;
           data_vencimento?: string | null;
+          user_id?: string | null;
         };
         Update: {
           id?: string;
@@ -45,6 +47,7 @@ export interface Database {
           observacao?: string | null;
           data_transacao?: string;
           data_vencimento?: string | null;
+          user_id?: string | null;
         };
         Relationships: [];
       };

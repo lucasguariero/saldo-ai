@@ -19,6 +19,7 @@ interface TransactionModalProps {
   onClose: () => void;
   onSave: (transaction: NovaTransacaoInput, id?: string) => Promise<void>;
   initialData?: Transacao | null;
+  defaultDate?: string;
 }
 
 const CATEGORIAS_SUGERIDAS = [
@@ -41,6 +42,7 @@ export function TransactionModal({
   onClose,
   onSave,
   initialData,
+  defaultDate,
 }: TransactionModalProps) {
   const [loading, setLoading] = useState(false);
   const [descricao, setDescricao] = useState('');
@@ -68,11 +70,12 @@ export function TransactionModal({
       setTipo('SAIDA_PAGA');
       setCategoria('Alimentação');
       setFormaPagamento('PIX');
-      setDataTransacao(new Date().toISOString().split('T')[0]);
+      // Usa a data fornecida ou a data atual
+      setDataTransacao(defaultDate || new Date().toISOString().split('T')[0]);
       setDataVencimento('');
       setObservacao('');
     }
-  }, [initialData, isOpen]);
+  }, [initialData, isOpen, defaultDate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

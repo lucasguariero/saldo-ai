@@ -13,6 +13,7 @@ export interface Transacao {
   observacao?: string | null;
   data_transacao: string; // YYYY-MM-DD
   data_vencimento?: string | null; // YYYY-MM-DD
+  user_id?: string | null;
 }
 
 export type NovaTransacaoInput = Omit<Transacao, 'id' | 'created_at'>;

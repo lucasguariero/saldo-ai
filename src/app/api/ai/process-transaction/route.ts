@@ -5,6 +5,17 @@ import { NovaTransacaoInput } from '@/types/finance';
 
 export async function POST(req: NextRequest) {
   try {
+    // Obter usuário autenticado
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { success: false, error: 'Usuário não autenticado. Faça login para continuar.' },
+        { status: 401 }
+      );
+    }
+
     let rawText = '';
     const contentType = req.headers.get('content-type') || '';
 
@@ -20,7 +31,7 @@ export async function POST(req: NextRequest) {
       } else if (textParam) {
         rawText = textParam;
       }
-    } 
+    }
     // 2. Processar se for JSON direto
     else if (contentType.includes('application/json')) {
       const body = await req.json();
@@ -37,13 +48,17 @@ export async function POST(req: NextRequest) {
     // 3. Extrair transações com LLM
     const transacoes: NovaTransacaoInput[] = await extractTransactionsFromText(rawText);
 
-    // 4. Inserir no Supabase
+    // 4. Inserir no Supabase com user_id
     let insertedRecords = transacoes;
     try {
-      const supabase = await createClient();
+      const transacoesComUserId = transacoes.map(t => ({
+        ...t,
+        user_id: user.id,
+      }));
+
       const { data, error } = await supabase
         .from('transacoes')
-        .insert(transacoes as any)
+        .insert(transacoesComUserId as any)
         .select();
 
       if (error) {

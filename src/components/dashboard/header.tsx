@@ -1,8 +1,10 @@
 'use client';
 
-import React from 'react';
-import { Sparkles, Plus, Radio } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Sparkles, Plus, Radio, LogOut, User as UserIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { createClient } from '@/lib/supabase/client';
+import { useRouter } from 'next/navigation';
 
 interface HeaderProps {
   onOpenNewTransaction: () => void;
@@ -10,6 +12,26 @@ interface HeaderProps {
 }
 
 export function Header({ onOpenNewTransaction, isRealtimeConnected }: HeaderProps) {
+  const router = useRouter();
+  const supabase = createClient();
+  const [user, setUser] = useState<{ email: string } | null>(null);
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUser({ email: user.email || '' });
+      }
+    };
+    getUser();
+  }, [supabase]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  };
+
   return (
     <header className="border-b border-border/40 bg-background/80 backdrop-blur-md sticky top-0 z-30">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -27,26 +49,45 @@ export function Header({ onOpenNewTransaction, isRealtimeConnected }: HeaderProp
               </span>
             </div>
             <p className="text-xs text-muted-foreground hidden sm:block">
-              Painel Financeiro Automatizado via Telegram & n8n
+              Painel Financeiro com IA
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* Status Realtime */}
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-secondary/50 px-2.5 py-1 rounded-full border border-border/50">
             <span className={`h-2 w-2 rounded-full ${isRealtimeConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
             <span className="hidden sm:inline">
-              {isRealtimeConnected ? 'Supabase Realtime Ativo' : 'Modo Demonstração'}
+              {isRealtimeConnected ? 'Online' : 'Offline'}
             </span>
           </div>
 
-          <Button 
-            onClick={onOpenNewTransaction} 
+          {/* User Menu */}
+          {user && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <UserIcon className="h-4 w-4" />
+              <span className="hidden md:inline truncate max-w-[120px]">
+                {user.email}
+              </span>
+            </div>
+          )}
+
+          <Button
+            onClick={onOpenNewTransaction}
             className="gap-1.5 shadow-sm font-medium text-sm"
           >
             <Plus className="h-4 w-4" />
-            <span>Nova Transação</span>
+            <span className="hidden sm:inline">Nova Transação</span>
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleLogout}
+            title="Sair"
+          >
+            <LogOut className="h-4 w-4" />
           </Button>
         </div>
       </div>

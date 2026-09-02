@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { processAudioFile, extractTransactionsFromText, classifyAndExtract } from '@/lib/ai/extractor';
+import { transcribeAudio, classifyAndExtract } from '@/lib/ai/extractor';
 import { createClient } from '@/lib/supabase/server';
 import { NovaTransacaoInput } from '@/types/finance';
 import { TipoIntento } from '@/types/crm';
@@ -36,11 +36,10 @@ export async function POST(req: NextRequest) {
       const textParam = formData.get('text') as string | null;
 
       if (audioFile && audioFile.size > 0) {
-        // Processar áudio - primeiro extrai transações (retrocompatibilidade)
-        const audioResult = await processAudioFile(audioFile);
-        rawText = audioResult.rawText;
+        // Transcrever áudio via Gemini ou Whisper
+        rawText = await transcribeAudio(audioFile);
 
-        // Agora classifica o conteúdo
+        // Classificar o conteúdo entre GSTORE, PWLABS, PESSOAL_FINANCE ou PESSOAL_TAREFA
         const classification = await classifyAndExtract(rawText);
         intentType = classification.tipo;
         extractedData = classification.dados;

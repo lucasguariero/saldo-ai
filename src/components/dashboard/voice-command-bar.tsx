@@ -175,11 +175,13 @@ export function VoiceCommandBar({ onTransactionAdded }: VoiceCommandBarProps) {
     }
   };
 
-  const handleSuccess = (data: { rawText: string; transacoes: any[] }) => {
+  const handleSuccess = (data: { rawText: string; transacoes?: any[]; message?: string; intentType?: string }) => {
     setStatus('success');
-    setStatusMessage('Transação registrada com sucesso!');
-    setLastProcessed(data);
-    onTransactionAdded(data.transacoes);
+    setStatusMessage(data.message || 'Registrado com sucesso!');
+    setLastProcessed(data as any);
+    if (data.transacoes && data.transacoes.length > 0) {
+      onTransactionAdded(data.transacoes);
+    }
 
     setTimeout(() => {
       setStatus('idle');

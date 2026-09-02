@@ -339,11 +339,9 @@ export async function extractTransactionsFromText(text: string): Promise<NovaTra
   }));
 }
 
-export async function processAudioFile(audioFile: File): Promise<{ rawText: string; transacoes: NovaTransacaoInput[] }> {
-  const { client, isOpenRouter, audioModel, textModel } = getAIClient();
-  const hoje = new Date().toISOString().split('T')[0];
+export async function transcribeAudio(audioFile: File): Promise<string> {
+  const { client, isOpenRouter, audioModel } = getAIClient();
 
-  // Caso OpenRouter: Enviar áudio multimodal para Gemini 2.5 Flash
   if (isOpenRouter) {
     const arrayBuffer = await audioFile.arrayBuffer();
     const base64 = Buffer.from(arrayBuffer).toString('base64');
@@ -351,16 +349,14 @@ export async function processAudioFile(audioFile: File): Promise<{ rawText: stri
 
     const response = await client.chat.completions.create({
       model: audioModel,
-      temperature: 0.1,
-      response_format: { type: 'json_object' },
+      temperature: 0,
       messages: [
-        { role: 'system', content: SYSTEM_PROMPT_FINANCE(hoje) },
         {
           role: 'user',
           content: [
             {
               type: 'text',
-              text: 'Ouça atentamente este áudio em português. Transcreva exatamente o que foi dito no campo "transcricao" e extraia todas as transações financeiras no array "transacoes".',
+              text: 'Transcreva exatamente o que foi falado neste áudio em português do Brasil. Retorne APENAS o texto puro transcrito, sem aspas e sem explicações.',
             },
             {
               type: 'image_url',
@@ -373,43 +369,30 @@ export async function processAudioFile(audioFile: File): Promise<{ rawText: stri
       ],
     });
 
-    const content = response.choices[0]?.message?.content || '{}';
-    const parsed = JSON.parse(content);
-    const rawText = parsed.transcricao || 'Áudio processado por voz';
-
-    if (!parsed.transacoes || !Array.isArray(parsed.transacoes) || parsed.transacoes.length === 0) {
-      throw new Error('Não foi possível identificar transações no áudio gravado.');
+    const text = response.choices[0]?.message?.content?.trim() || '';
+    if (!text) {
+      throw new Error('Não foi possível identificar o que foi dito no áudio. Fale um pouco mais perto do microfone.');
     }
-
-    const transacoes: NovaTransacaoInput[] = parsed.transacoes.map((t: any) => ({
-      descricao: String(t.descricao || 'Despesa/Receita'),
-      valor: Math.abs(Number(t.valor) || 0),
-      tipo: sanitizeTipo(t.tipo),
-      categoria: String(t.categoria || 'Outros'),
-      forma_pagamento: sanitizeForma(t.forma_pagamento),
-      observacao: t.observacao ? String(t.observacao) : null,
-      data_transacao: t.data_transacao || hoje,
-      data_vencimento: t.data_vencimento || null,
-    }));
-
-    return { rawText, transacoes };
+    return text;
   }
 
-  // Caso OpenAI tradicional: Whisper + Text
+  // Caso OpenAI tradicional: Whisper
   const transcription = await client.audio.transcriptions.create({
     file: audioFile,
     model: 'whisper-1',
     language: 'pt',
-    prompt: 'Finanças pessoais, nomes de estabelecimentos, Pix, débito, crédito, compras',
   });
 
-  const rawText = transcription.text;
-  const transacoes = await extractTransactionsFromText(rawText);
-  return { rawText, transacoes };
+  return transcription.text;
 }
 
-// Retrocompatibilidade
-export async function transcribeAudio(audioFile: File): Promise<string> {
-  const res = await processAudioFile(audioFile);
-  return res.rawText;
+export async function processAudioFile(audioFile: File): Promise<{ rawText: string; transacoes: NovaTransacaoInput[] }> {
+  const rawText = await transcribeAudio(audioFile);
+  let transacoes: NovaTransacaoInput[] = [];
+  try {
+    transacoes = await extractTransactionsFromText(rawText);
+  } catch {
+    transacoes = [];
+  }
+  return { rawText, transacoes };
 }

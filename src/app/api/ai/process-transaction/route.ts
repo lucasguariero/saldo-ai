@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { transcribeAudio, extractTransactionsFromText } from '@/lib/ai/extractor';
+import { processAudioFile, extractTransactionsFromText } from '@/lib/ai/extractor';
 import { createClient } from '@/lib/supabase/server';
 import { NovaTransacaoInput } from '@/types/finance';
 
@@ -7,6 +7,13 @@ export async function POST(req: NextRequest) {
   try {
     // Obter usuário autenticado
     const supabase = await createClient();
+    if (!supabase) {
+      return NextResponse.json(
+        { success: false, error: 'Serviço de banco de dados não disponível.' },
+        { status: 500 }
+      );
+    }
+
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
@@ -17,6 +24,7 @@ export async function POST(req: NextRequest) {
     }
 
     let rawText = '';
+    let transacoes: NovaTransacaoInput[] = [];
     const contentType = req.headers.get('content-type') || '';
 
     // 1. Processar se for FormData (áudio ou texto)
@@ -26,29 +34,32 @@ export async function POST(req: NextRequest) {
       const textParam = formData.get('text') as string | null;
 
       if (audioFile && audioFile.size > 0) {
-        // Transcrever áudio via Whisper
-        rawText = await transcribeAudio(audioFile);
+        // Processar áudio diretamente (Whisper ou Gemini Multimodal)
+        const audioResult = await processAudioFile(audioFile);
+        rawText = audioResult.rawText;
+        transacoes = audioResult.transacoes;
       } else if (textParam) {
         rawText = textParam;
+        transacoes = await extractTransactionsFromText(rawText);
       }
-    }
-    // 2. Processar se for JSON direto
+    } 
+    // 2. Processar se for JSON direto (texto)
     else if (contentType.includes('application/json')) {
       const body = await req.json();
       rawText = body.text || '';
+      if (rawText.trim()) {
+        transacoes = await extractTransactionsFromText(rawText);
+      }
     }
 
-    if (!rawText.trim()) {
+    if (!rawText.trim() || transacoes.length === 0) {
       return NextResponse.json(
-        { success: false, error: 'Nenhum áudio ou texto foi fornecido.' },
+        { success: false, error: 'Nenhum áudio ou texto válido foi fornecido.' },
         { status: 400 }
       );
     }
 
-    // 3. Extrair transações com LLM
-    const transacoes: NovaTransacaoInput[] = await extractTransactionsFromText(rawText);
-
-    // 4. Inserir no Supabase com user_id
+    // 3. Inserir no Supabase com user_id
     let insertedRecords = transacoes;
     try {
       const transacoesComUserId = transacoes.map(t => ({
@@ -67,7 +78,7 @@ export async function POST(req: NextRequest) {
         insertedRecords = data as any;
       }
     } catch (dbErr) {
-      console.warn('Não foi possível conectar ao Supabase (atualização local):', dbErr);
+      console.warn('Erro ao conectar ao Supabase:', dbErr);
     }
 
     return NextResponse.json({

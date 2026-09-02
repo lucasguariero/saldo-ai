@@ -32,16 +32,17 @@ export function DashboardView({ initialTransacoes = [] }: DashboardViewProps) {
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [userId, setUserId] = useState<string | null>(null);
+  const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(null);
 
-  const supabase = useMemo(() => {
+  // Initialize Supabase client on mount
+  useEffect(() => {
     try {
-      if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-        return createClient();
+      if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        setSupabase(createClient());
       }
     } catch (e) {
       console.warn('Supabase credentials not configured yet, using local state mode.', e);
     }
-    return null;
   }, []);
 
   // Get current user and fetch data

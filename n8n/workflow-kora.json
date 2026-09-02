@@ -1,0 +1,280 @@
+{
+  "name": "Kora - Telegram Financial Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "node-telegram-trigger",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.message.voice !== undefined || $json.message.audio !== undefined }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "node-check-audio",
+      "name": "É Áudio / Voz?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.voice ? $json.message.voice.file_id : $json.message.audio.file_id }}"
+      },
+      "id": "node-get-audio-file",
+      "name": "Download Áudio Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        680,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {
+          "language": "pt",
+          "prompt": "Finanças, gastos, compras, Pix, débito, crédito, Burger King, Nubank, Whey"
+        }
+      },
+      "id": "node-whisper",
+      "name": "OpenAI Whisper (Transcrição)",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1.4,
+      "position": [
+        900,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const isAudio = $items('É Áudio / Voz?')[0].json.message.voice !== undefined || $items('É Áudio / Voz?')[0].json.message.audio !== undefined;\nconst message = $items('Telegram Trigger')[0].json.message;\nconst chatId = message.chat.id;\n\nlet rawText = '';\nif (isAudio) {\n  rawText = $json.text || '';\n} else {\n  rawText = message.text || '';\n}\n\nreturn [{\n  json: {\n    chatId,\n    rawText,\n    senderName: message.from.first_name || 'Usuário',\n    date: new Date().toISOString().split('T')[0]\n  }\n}];"
+      },
+      "id": "node-prepare-input",
+      "name": "Normalizar Entrada",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1140,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "options": {
+          "temperature": 0.1
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Você é o Kora, assistente de inteligência financeira pessoal. Sua única função é extrair dados de transações a partir de mensagens informais.\n\nData de referência hoje: {{ $json.date }}\n\nREGRAS:\n1. tipo: 'ENTRADA' (vendas, salario, pix recebido) | 'SAIDA_PAGA' (gasto no pix, debito, dinheiro) | 'SAIDA_PENDENTE' (faturas, boletos futuros, contas a pagar).\n2. forma_pagamento: 'PIX' | 'DEBITO' | 'CREDITO' | 'DINHEIRO'.\n3. Calcule divisões de conta: Se falar 'Bk 47,30 sendo que 19 o Kajan passou', o valor líquido é 28.30. Coloque 28.30 no campo valor e o contexto completo em observacao.\n4. Categorias sugeridas: 'Alimentação', 'Mercado', 'Transporte', 'Moradia', 'Salário', 'Vendas / Renda Extra', 'Cartão de Crédito', 'Lazer', 'Saúde', 'Outros'.\n5. Retorne SEMPRE e APENAS um JSON no formato:\n{\n  \"transacoes\": [\n    {\n      \"descricao\": \"Nome do item/gasto\",\n      \"valor\": 28.30,\n      \"tipo\": \"SAIDA_PAGA\",\n      \"categoria\": \"Alimentação\",\n      \"forma_pagamento\": \"DEBITO\",\n      \"observacao\": \"Contexto original\",\n      \"data_transacao\": \"{{ $json.date }}\",\n      \"data_vencimento\": null\n    }\n  ]\n}",
+              "role": "system"
+            },
+            {
+              "content": "={{ $json.rawText }}",
+              "role": "user"
+            }
+          ]
+        }
+      },
+      "id": "node-llm",
+      "name": "LLM Estruturação JSON",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1.4,
+      "position": [
+        1360,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const chatId = $items('Normalizar Entrada')[0].json.chatId;\nconst rawResponse = $json.message ? $json.message.content : ($json.text || '');\n\n// Limpar blocos de markdown caso venha com ```json\nconst cleanJson = rawResponse.replace(/```json/g, '').replace(/```/g, '').trim();\n\nlet parsed;\ntry {\n  parsed = JSON.parse(cleanJson);\n} catch (e) {\n  throw new Error('Falha ao processar o JSON retornado pela LLM: ' + cleanJson);\n}\n\nconst transacoes = parsed.transacoes || [parsed];\n\nreturn transacoes.map(t => ({\n  json: {\n    ...t,\n    chatId\n  }\n}));"
+      },
+      "id": "node-parse-json",
+      "name": "Processar Transações",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1580,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hzzzwoihtycxpqkeyxxb.supabase.co/rest/v1/transacoes",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6enp3b2lodHljeHBxa2V5eHhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2NTE0ODksImV4cCI6MjEwMjIyNzQ4OX0.a8F8TDZNlpQ5ZYwRqF3Tric9YmURjRiLNjJOS6So3oI"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6enp3b2lodHljeHBxa2V5eHhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2NTE0ODksImV4cCI6MjEwMjIyNzQ4OX0.a8F8TDZNlpQ5ZYwRqF3Tric9YmURjRiLNjJOS6So3oI"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"descricao\": \"{{ $json.descricao }}\",\n  \"valor\": {{ $json.valor }},\n  \"tipo\": \"{{ $json.tipo }}\",\n  \"categoria\": \"{{ $json.categoria }}\",\n  \"forma_pagamento\": \"{{ $json.forma_pagamento }}\",\n  \"observacao\": {{ $json.observacao ? JSON.stringify($json.observacao) : null }},\n  \"data_transacao\": \"{{ $json.data_transacao }}\",\n  \"data_vencimento\": {{ $json.data_vencimento ? JSON.stringify($json.data_vencimento) : null }}\n}",
+        "options": {}
+      },
+      "id": "node-supabase-insert",
+      "name": "Inserir no Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1800,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $items('Processar Transações')[0].json.chatId }}",
+        "text": "=✅ *Transação Registrada no Kora!*\n\n📌 *Descrição:* {{ $json[0].descricao }}\n💰 *Valor:* R$ {{ $json[0].valor.toFixed(2).replace('.', ',') }}\n📊 *Tipo:* {{ $json[0].tipo === 'ENTRADA' ? '🟢 Entrada' : ($json[0].tipo === 'SAIDA_PAGA' ? '🔴 Saída Paga' : '⏳ Pendente') }}\n🏷️ *Categoria:* {{ $json[0].categoria }}\n💳 *Forma:* {{ $json[0].forma_pagamento }}\n{{ $json[0].observacao ? '📝 *Obs:* ' + $json[0].observacao : '' }}\n\n_Atualizado no seu Dashboard em tempo real!_",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "node-telegram-reply",
+      "name": "Confirmar no Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2020,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "É Áudio / Voz?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É Áudio / Voz?": {
+      "main": [
+        [
+          {
+            "node": "Download Áudio Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Normalizar Entrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Áudio Telegram": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Whisper (Transcrição)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Whisper (Transcrição)": {
+      "main": [
+        [
+          {
+            "node": "Normalizar Entrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar Entrada": {
+      "main": [
+        [
+          {
+            "node": "LLM Estruturação JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM Estruturação JSON": {
+      "main": [
+        [
+          {
+            "node": "Processar Transações",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar Transações": {
+      "main": [
+        [
+          {
+            "node": "Inserir no Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inserir no Supabase": {
+      "main": [
+        [
+          {
+            "node": "Confirmar no Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -13,10 +13,19 @@ interface HeaderProps {
 
 export function Header({ onOpenNewTransaction, isRealtimeConnected }: HeaderProps) {
   const router = useRouter();
-  const supabase = createClient();
+  const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(null);
   const [user, setUser] = useState<{ email: string } | null>(null);
 
   useEffect(() => {
+    // Only create client in browser with env vars
+    if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      setSupabase(createClient());
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!supabase) return;
+
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -27,7 +36,9 @@ export function Header({ onOpenNewTransaction, isRealtimeConnected }: HeaderProp
   }, [supabase]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
     router.push('/login');
     router.refresh();
   };
@@ -64,7 +75,7 @@ export function Header({ onOpenNewTransaction, isRealtimeConnected }: HeaderProp
           </div>
 
           {/* User Menu */}
-          {user && (
+          {user && supabase && (
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <UserIcon className="h-4 w-4" />
               <span className="hidden md:inline truncate max-w-[120px]">

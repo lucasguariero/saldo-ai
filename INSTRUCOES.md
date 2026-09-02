@@ -3,18 +3,18 @@
 Aqui você pode colar instruções, tarefas e preferências para o Claude.
 
 deu esse erro no deploy:
-12 | export default function LoginPage() {
-  13 |   const router = useRouter();
-> 14 |   const supabase = createClient();
-     |                    ^
-  15 |   const [email, setEmail] = useState('');
-  16 |   const [password, setPassword] = useState('');
-  17 |   const [loading, setLoading] = useState(false); {
-  digest: '2385130855'
-}
-Export encountered an error on /login/page: /login, exiting the build.
-⨯ Next.js build worker exited with code: 1 and signal: null
-Error: Command "npm run build" exited with 1
+This Routing Middleware has crashed.
+
+Your connection is working correctly.
+
+Vercel is working correctly.
+
+500: INTERNAL_SERVER_ERROR
+Code: MIDDLEWARE_INVOCATION_FAILED
+ID: gru1::hw5r6-1788370004357-0b7cd6d7fae7
+
+If you are a visitor, contact the website owner or try again later.
+If you are the owner, learn how to fix the error and check the logs.
 
 ---
 

@@ -2,6 +2,19 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
+  // Skip middleware if env vars are not available (development fallback)
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    // Allow request to proceed without auth check
+    return NextResponse.next({
+      request: {
+        headers: request.headers,
+      },
+    });
+  }
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -9,8 +22,8 @@ export async function middleware(request: NextRequest) {
   });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {
@@ -33,8 +46,8 @@ export async function middleware(request: NextRequest) {
 
   // Routes that don't require authentication
   const publicRoutes = ['/login', '/signup', '/manifest.json', '/favicon.ico'];
-  const isPublicRoute = 
-    publicRoutes.includes(request.nextUrl.pathname) || 
+  const isPublicRoute =
+    publicRoutes.includes(request.nextUrl.pathname) ||
     request.nextUrl.pathname.startsWith('/icons/');
 
   // If user is not authenticated and trying to access protected route

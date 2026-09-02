@@ -47,7 +47,10 @@ export function DashboardView({ initialTransacoes = [] }: DashboardViewProps) {
 
   // Get current user and fetch data
   useEffect(() => {
-    if (!supabase) return;
+    if (!supabase) {
+      // Even if supabase is not initialized, allow the UI to render with mock data
+      return;
+    }
 
     let channel: ReturnType<typeof supabase.channel> | null = null;
 

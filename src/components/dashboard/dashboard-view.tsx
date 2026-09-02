@@ -48,12 +48,12 @@ export function DashboardView({ initialTransacoes = [] }: DashboardViewProps) {
   useEffect(() => {
     if (!supabase) return;
 
-    async function init() {
-      // Get user
-      const supabaseClient = supabase;
-      if (!supabaseClient) return;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
 
-      const { data: { user } } = await supabaseClient.auth.getUser();
+    async function init() {
+      if (!supabase) return;
+
+      const { data: { user } } = await supabase.auth.getUser();
       setUserId(user?.id || null);
 
       // If no user, use mock data
@@ -63,7 +63,7 @@ export function DashboardView({ initialTransacoes = [] }: DashboardViewProps) {
 
       // Fetch transactions for this user
       try {
-        const { data, error } = await supabaseClient
+        const { data, error } = await supabase
           .from('transacoes')
           .select('*')
           .eq('user_id', user.id)
@@ -77,9 +77,9 @@ export function DashboardView({ initialTransacoes = [] }: DashboardViewProps) {
         console.warn('Could not fetch from Supabase:', err);
       }
 
-      // Subscribe to realtime changes
-      const channel = supabaseClient
-        .channel('transacoes-realtime-channel')
+      // Subscribe to realtime changes with unique user channel
+      channel = supabase
+        .channel(`transacoes-user-${user.id}`)
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'transacoes' },
@@ -101,19 +101,17 @@ export function DashboardView({ initialTransacoes = [] }: DashboardViewProps) {
           }
         )
         .subscribe((status) => {
-          if (status === 'SUBSCRIBED') {
-            setIsRealtimeConnected(true);
-          } else {
-            setIsRealtimeConnected(false);
-          }
+          setIsRealtimeConnected(status === 'SUBSCRIBED');
         });
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
     }
 
     init();
+
+    return () => {
+      if (channel && supabase) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, [supabase]);
 
   // Filtrar transações do mês selecionado

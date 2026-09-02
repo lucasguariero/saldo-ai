@@ -48,6 +48,12 @@ export function VoiceCommandBar({ onTransactionAdded }: VoiceCommandBarProps) {
   // Iniciar gravação de voz
   const startRecording = async () => {
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setStatus('error');
+        setStatusMessage('Gravação por voz requer HTTPS. No celular, acesse pelo link da Vercel.');
+        return;
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioChunksRef.current = [];
 

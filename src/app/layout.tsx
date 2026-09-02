@@ -21,13 +21,13 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Kora | Controle Financeiro Automatizado",
-  description: "Painel financeiro inteligente com gravação de voz e IA",
+  title: "Saldo AI | Controle Financeiro com Inteligência Artificial",
+  description: "Painel financeiro pessoal inteligente com gravação de voz e IA",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Kora",
+    title: "Saldo AI",
   },
   icons: {
     icon: [

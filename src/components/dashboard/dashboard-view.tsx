@@ -374,7 +374,7 @@ export function DashboardView({ initialTransacoes = [] }: DashboardViewProps) {
       </main>
 
       <footer className="border-t border-border/40 py-4 text-center text-xs text-muted-foreground">
-        Kora &bull; Sistema Pessoal de Gestão Financeira Inteligente
+        Saldo AI &bull; Gestão Financeira Inteligente
       </footer>
 
       <TransactionModal

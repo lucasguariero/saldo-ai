@@ -66,7 +66,7 @@ export default function SignupPage() {
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl font-bold">Criar Conta</CardTitle>
           <CardDescription>
-            Comece a controlar suas finanças com IA
+            Comece a controlar suas finanças com o Saldo AI
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSignup}>

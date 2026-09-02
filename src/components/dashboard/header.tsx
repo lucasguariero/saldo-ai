@@ -42,14 +42,14 @@ export function Header({ onOpenNewTransaction, isRealtimeConnected }: HeaderProp
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-foreground via-foreground/90 to-muted-foreground bg-clip-text">
-                Kora
+                Saldo
               </h1>
               <span className="text-[10px] uppercase font-semibold tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                Finance
+                AI
               </span>
             </div>
             <p className="text-xs text-muted-foreground hidden sm:block">
-              Painel Financeiro com IA
+              Gestão Financeira Inteligente
             </p>
           </div>
         </div>

@@ -40,9 +40,9 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl font-bold">Kora</CardTitle>
+          <CardTitle className="text-2xl font-bold">Saldo AI</CardTitle>
           <CardDescription>
-            Entre com seu email e senha para acessar suas finanças
+            Entre com seu email e senha para acessar o seu painel financeiro
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleLogin}>

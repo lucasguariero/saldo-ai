@@ -26,7 +26,7 @@ export async function extractTransactionsFromText(text: string): Promise<NovaTra
   const openai = getOpenAIClient();
   const hoje = new Date().toISOString().split('T')[0];
 
-  const systemPrompt = `Você é o Kora, um assistente inteligente de gestão financeira pessoal no Brasil.
+  const systemPrompt = `Você é o Saldo AI, um assistente inteligente de gestão financeira pessoal no Brasil.
 Sua missão é extrair transações financeiras com precisão matemática e categorização a partir de mensagens informais de texto ou transcrições de áudio.
 
 Data atual de referência: ${hoje}

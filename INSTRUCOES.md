@@ -1,13 +1,8 @@
 # Instruções do Usuário
+deu esse erro no projeto.
+Your project's URL and Key are required to create a Supabase client! Check your Supabase project's API settings to find these values https://supabase.com/dashboard/project/_/settings/api
+setembro de 2026
 
-Aqui você pode colar instruções, tarefas e preferências para o Claude.
-
-deu esse erro no deploy:
-This page couldn’t load
-Reload to try again, or go back.
-
-Reload
-Back
 
 ---
 

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Transacao, NovaTransacaoInput, ResumoFinanceiro, CategoriaGasto, FluxoDia } from '@/types/finance';
+import { Workspace, WorkspaceState } from '@/types/crm';
 import { createClient } from '@/lib/supabase/client';
 import { Header } from './header';
 import { SummaryCards } from './summary-cards';
@@ -12,6 +13,9 @@ import { CashFlowChart } from './cash-flow-chart';
 import { VoiceCommandBar } from './voice-command-bar';
 import { MonthSelector } from './month-selector';
 import { PendingBillsTab } from './pending-bills-tab';
+import { WorkspaceSwitcher } from '@/components/layout/workspace-switcher';
+import { GStoreView } from '@/components/gstore/gstore-view';
+import { DealsKanban } from '@/components/pwlabs/deals-kanban';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +37,8 @@ export function DashboardView({ initialTransacoes = [] }: DashboardViewProps) {
   const [activeTab, setActiveTab] = useState('overview');
   const [userId, setUserId] = useState<string | null>(null);
   const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(null);
+  const [workspace, setWorkspace] = useState<Workspace>('pessoal');
+  const [workspaceContadores, setWorkspaceContadores] = useState({ gstore: 0, pwlabs: 0, pessoal: 0 });
 
   // Initialize Supabase client on mount
   useEffect(() => {
@@ -311,10 +317,30 @@ export function DashboardView({ initialTransacoes = [] }: DashboardViewProps) {
       />
 
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 flex-1 max-w-7xl">
-        <VoiceCommandBar onTransactionAdded={handleVoiceTransactionAdded} />
-        <MonthSelector currentDate={selectedDate} onDateChange={setSelectedDate} />
+        {/* Workspace Switcher */}
+        <div className="flex items-center justify-between">
+          <WorkspaceSwitcher
+            workspaceAtivo={workspace}
+            onWorkspaceChange={setWorkspace}
+            contadores={workspaceContadores}
+          />
+        </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        {/* Renderiza conforme o workspace selecionado */}
+        {workspace === 'gstore' && userId && (
+          <GStoreView userId={userId} />
+        )}
+
+        {workspace === 'pwlabs' && userId && (
+          <DealsKanban userId={userId} />
+        )}
+
+        {workspace === 'pessoal' && (
+          <>
+            <VoiceCommandBar onTransactionAdded={handleVoiceTransactionAdded} />
+            <MonthSelector currentDate={selectedDate} onDateChange={setSelectedDate} />
+
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-4">
             <TabsTrigger value="overview" className="gap-2">
               <ListOrdered className="h-4 w-4" />
@@ -373,6 +399,8 @@ export function DashboardView({ initialTransacoes = [] }: DashboardViewProps) {
             />
           </TabsContent>
         </Tabs>
+          </>
+        )}
       </main>
 
       <footer className="border-t border-border/40 py-4 text-center text-xs text-muted-foreground">

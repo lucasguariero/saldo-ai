@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Transacao, NovaTransacaoInput, ResumoFinanceiro, CategoriaGasto, FluxoDia } from '@/types/finance';
-import { Workspace, WorkspaceState } from '@/types/crm';
+import { Workspace } from '@/types/crm';
+import { WorkspaceId, WORKSPACE_STORAGE_KEY } from '@/types/workspace';
 import { createClient } from '@/lib/supabase/client';
 import { Header } from './header';
 import { SummaryCards } from './summary-cards';
@@ -13,9 +14,10 @@ import { CashFlowChart } from './cash-flow-chart';
 import { VoiceCommandBar } from './voice-command-bar';
 import { MonthSelector } from './month-selector';
 import { PendingBillsTab } from './pending-bills-tab';
-import { WorkspaceSwitcher } from '@/components/layout/workspace-switcher';
+import { BottomNavBar } from '@/components/layout/bottom-nav-bar';
 import { GStoreView } from '@/components/gstore/gstore-view';
 import { DealsKanban } from '@/components/pwlabs/deals-kanban';
+import { ActoView } from '@/components/acto/acto-view';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -37,8 +39,18 @@ export function DashboardView({ initialTransacoes = [] }: DashboardViewProps) {
   const [activeTab, setActiveTab] = useState('overview');
   const [userId, setUserId] = useState<string | null>(null);
   const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(null);
-  const [workspace, setWorkspace] = useState<Workspace>('pessoal');
-  const [workspaceContadores, setWorkspaceContadores] = useState({ gstore: 0, pwlabs: 0, pessoal: 0 });
+  const [workspace, setWorkspace] = useState<WorkspaceId>('pessoal');
+  const [workspaceContadores, setWorkspaceContadores] = useState({ gstore: 0, pwlabs: 0, acto: 0, pessoal: 0 });
+
+  // Carregar workspace do localStorage ao iniciar
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(WORKSPACE_STORAGE_KEY);
+      if (saved && ['gstore', 'pwlabs', 'acto', 'pessoal'].includes(saved)) {
+        setWorkspace(saved as WorkspaceId);
+      }
+    }
+  }, []);
 
   // Initialize Supabase client on mount
   useEffect(() => {
@@ -309,6 +321,13 @@ export function DashboardView({ initialTransacoes = [] }: DashboardViewProps) {
     });
   };
 
+  const handleWorkspaceChange = (newWorkspace: WorkspaceId) => {
+    setWorkspace(newWorkspace);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(WORKSPACE_STORAGE_KEY, newWorkspace);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col selection:bg-emerald-500/20">
       <Header
@@ -316,16 +335,7 @@ export function DashboardView({ initialTransacoes = [] }: DashboardViewProps) {
         isRealtimeConnected={isRealtimeConnected}
       />
 
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 flex-1 max-w-7xl">
-        {/* Workspace Switcher */}
-        <div className="flex items-center justify-between">
-          <WorkspaceSwitcher
-            workspaceAtivo={workspace}
-            onWorkspaceChange={setWorkspace}
-            contadores={workspaceContadores}
-          />
-        </div>
-
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 flex-1 max-w-7xl pb-28">
         {/* Renderiza conforme o workspace selecionado */}
         {workspace === 'gstore' && userId && (
           <GStoreView userId={userId} />
@@ -335,77 +345,84 @@ export function DashboardView({ initialTransacoes = [] }: DashboardViewProps) {
           <DealsKanban userId={userId} />
         )}
 
+        {workspace === 'acto' && userId && (
+          <ActoView userId={userId} />
+        )}
+
         {workspace === 'pessoal' && (
           <>
             <VoiceCommandBar onTransactionAdded={handleVoiceTransactionAdded} />
             <MonthSelector currentDate={selectedDate} onDateChange={setSelectedDate} />
 
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-4">
-            <TabsTrigger value="overview" className="gap-2">
-              <ListOrdered className="h-4 w-4" />
-              Visão Geral
-            </TabsTrigger>
-            <TabsTrigger value="pending" className="gap-2">
-              <Calendar className="h-4 w-4" />
-              Contas a Pagar
-              {transacoesDoMes.filter(t => t.tipo === 'SAIDA_PENDENTE').length > 0 && (
-                <Badge variant="destructive" className="ml-1 h-5 px-1.5 text-xs">
-                  {transacoesDoMes.filter(t => t.tipo === 'SAIDA_PENDENTE').length}
-                </Badge>
-              )}
-            </TabsTrigger>
-          </TabsList>
+              <TabsList className="mb-4">
+                <TabsTrigger value="overview" className="gap-2">
+                  <ListOrdered className="h-4 w-4" />
+                  Visão Geral
+                </TabsTrigger>
+                <TabsTrigger value="pending" className="gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Contas a Pagar
+                  {transacoesDoMes.filter(t => t.tipo === 'SAIDA_PENDENTE').length > 0 && (
+                    <Badge variant="destructive" className="ml-1 h-5 px-1.5 text-xs">
+                      {transacoesDoMes.filter(t => t.tipo === 'SAIDA_PENDENTE').length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              </TabsList>
 
-          <TabsContent value="overview" className="space-y-6 mt-0">
-            <SummaryCards resumo={resumo} />
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <CashFlowChart dados={fluxoDiario} />
-              </div>
-              <div className="lg:col-span-1">
-                <CategoryBreakdown categorias={categoriasGasto} />
-              </div>
-            </div>
-            <Card className="shadow-sm">
-              <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
-                    <ListOrdered className="h-4 w-4" />
+              <TabsContent value="overview" className="space-y-6 mt-0">
+                <SummaryCards resumo={resumo} />
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2">
+                    <CashFlowChart dados={fluxoDiario} />
                   </div>
-                  <CardTitle className="text-base font-semibold">Extrato de Transações</CardTitle>
+                  <div className="lg:col-span-1">
+                    <CategoryBreakdown categorias={categoriasGasto} />
+                  </div>
                 </div>
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Calendar className="h-3.5 w-3.5" />
-                  {selectedDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-                </span>
-              </CardHeader>
-              <CardContent>
-                <TransactionTable
-                  transacoes={transacoesDoMes}
-                  onEdit={handleOpenEdit}
-                  onDelete={handleDeleteTransaction}
-                  onMarkAsPaid={handleMarkAsPaid}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
+                <Card className="shadow-sm">
+                  <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                        <ListOrdered className="h-4 w-4" />
+                      </div>
+                      <CardTitle className="text-base font-semibold">Extrato de Transações</CardTitle>
+                    </div>
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Calendar className="h-3.5 w-3.5" />
+                      {selectedDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                    </span>
+                  </CardHeader>
+                  <CardContent>
+                    <TransactionTable
+                      transacoes={transacoesDoMes}
+                      onEdit={handleOpenEdit}
+                      onDelete={handleDeleteTransaction}
+                      onMarkAsPaid={handleMarkAsPaid}
+                    />
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-          <TabsContent value="pending" className="mt-0">
-            <PendingBillsTab
-              transacoes={transacoesDoMes}
-              onMarkAsPaid={handleMarkAsPaid}
-              selectedMonth={selectedDate}
-            />
-          </TabsContent>
-        </Tabs>
+              <TabsContent value="pending" className="mt-0">
+                <PendingBillsTab
+                  transacoes={transacoesDoMes}
+                  onMarkAsPaid={handleMarkAsPaid}
+                  selectedMonth={selectedDate}
+                />
+              </TabsContent>
+            </Tabs>
           </>
         )}
       </main>
 
-      <footer className="border-t border-border/40 py-4 text-center text-xs text-muted-foreground">
-        Saldo AI &bull; Gestão Financeira Inteligente
-      </footer>
+      {/* Bottom Navigation Bar */}
+      <BottomNavBar
+        activeWorkspace={workspace}
+        onWorkspaceChange={handleWorkspaceChange}
+        contadores={workspaceContadores}
+      />
 
       <TransactionModal
         isOpen={isModalOpen}

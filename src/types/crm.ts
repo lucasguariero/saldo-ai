@@ -20,7 +20,7 @@ export type EstagioDealPWlabs =
 
 export type CondicaoProduto = 'NOVO' | 'USADO_EXCELENTE' | 'USADO_BOM' | 'COM_DEFEITO';
 
-export type Workspace = 'pwlabs' | 'gstore' | 'pessoal';
+export type Workspace = 'pwlabs' | 'gstore' | 'pessoal' | 'acto';
 
 // ============================================
 // INTERFACES

@@ -87,12 +87,16 @@ export async function POST(req: NextRequest) {
     let message = '';
 
     try {
-      if (intentType === 'GSTORE_PRODUTO' && extractedData?.produto) {
+      // GSTORE_REVENDA ou GSTORE_PRODUTO (retrocompatibilidade)
+      const isGstoreRevenda = intentType === 'GSTORE_REVENDA' || intentType === 'GSTORE_PRODUTO';
+
+      if (isGstoreRevenda && extractedData?.produto) {
         // Salvar na tabela produtos_estoque
         const produto = {
           ...extractedData.produto,
           user_id: user.id,
           workspace_id: 'gstore',
+          tipo_operacao: 'REVENDA_ESTOQUE',
           status: extractedData.produto.status || 'COMPRADO_PREPARACAO',
         };
 

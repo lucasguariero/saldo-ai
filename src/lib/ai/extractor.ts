@@ -108,71 +108,94 @@ function sanitizeStatus(status: any): string {
 // SYSTEM PROMPTS
 // ============================================
 
-const SYSTEM_PROMPT_DISPATCHER = (hoje: string) => `Você é o cérebro central do Saldo AI / CRM Multi-Workspace.
-Analise a mensagem ou áudio transcrito e identifique qual dos 3 workspaces o comando pertence:
+const SYSTEM_PROMPT_DISPATCHER = (hoje: string) => `Você é o cérebro central do Saldo AI / Jarvis CRM Multi-Workspace.
+Analise a mensagem ou áudio transcrito e identifique qual dos 4 ecossistemas o comando pertence:
 
-1. GSTORE (Produtos para revenda, compras de eletrônicos/mercadorias para a loja, estoque):
-   - Ex: "Comprei um notebook Dell Inspiron 15 i5 11ª geração por 1.800 para vender na loja"
-   - Retorne tipo: "GSTORE_PRODUTO"
-   - Extraia custo de aquisição, marca, modelo, especificações técnicas, título chamativo para OLX e descrição de anúncio.
-   - Calcule preço de venda sugerido (benchmark com margem saudável de 30-50%).
+1. GSTORE_REVENDA (Produtos para revenda/estoque próprio - "Comprei... pra loja"):
+   - Ex: "Comprei um PS5 por 2.400 pra loja" ou "Comprei um iPhone 13 pro max 256gb por 3.200"
+   - Retorne tipo: "GSTORE_REVENDA"
+   - Extraia: custo de aquisição, marca, modelo, especificações técnicas, título chamativo.
+   - O sistema fará benchmark automático no Mercado Livre.
 
-2. PWLABS (B2B / Agência, clientes, reuniões, propostas, contratos de tráfego/landing page):
-   - Ex: "Reunião com Dr. Marcos da clínica Sorrir fechou proposta de 4.500 no tráfego pago"
+2. GSTORE_AFILIADO (Vitrine de produtos de lojas parceiras para indicar):
+   - Ex: "Recomendar suporte de monitor da Elg na vitrine" ou "Colocar fone JBL na lista de afiliados"
+   - Retorne tipo: "GSTORE_AFILIADO"
+   - Extraia: nome do produto, marca, loja parceira, link de afiliado (se mencionado).
+
+3. PWLABS_DEAL (B2B / Agência, clientes, reuniões, propostas, contratos):
+   - Ex: "Fechei proposta de 4k com a Imobiliária Alfa para landing page" ou "Reunião com a clínica Sorrir"
    - Retorne tipo: "PWLABS_DEAL"
 
-3. PESSOAL (Finanças pessoais, alimentação, combustível, contas de casa OU tarefas do dia):
-   - Se for financeiro (ex: "Almoço 47,30"): Retorne tipo: "PESSOAL_FINANCE".
-   - Se for lembrete/tarefa (ex: "Lembrar de pagar a luz às 16h"): Retorne tipo: "PESSOAL_TAREFA".
+4. ACTO_DEMANDA (Gestão de produto/UX - Flora, CityPro):
+   - Ex: "Adicionar tarefa na Flora: corrigir responsividade do checkout" ou "Nova demanda CityPro: criar tela de login"
+   - Retorne tipo: "ACTO_DEMANDA"
+   - Extraia: projeto (flora/citypro), título da demanda, prioridade.
+
+5. PESSOAL_FINANCE (Finanças pessoais):
+   - Ex: "Almocei no restaurante por 35 no débito" ou "Recebi 2.500 de freelancer"
+   - Retorne tipo: "PESSOAL_FINANCE"
+
+6. PESSOAL_TAREFA (Tarefas pessoais/rotina):
+   - Ex: "Lembrar de ligar para a contabilidade às 15h" ou "Agendar reunião com o médico amanhã"
+   - Retorne tipo: "PESSOAL_TAREFA"
 
 Data de referência: ${hoje}
 
 FORMATO DE RESPOSTA (JSON STRICT):
 {
   "transcricao": "o que foi falado/escrito",
-  "tipo": "GSTORE_PRODUTO" | "PWLABS_DEAL" | "PESSOAL_FINANCE" | "PESSOAL_TAREFA",
+  "tipo": "GSTORE_REVENDA" | "GSTORE_AFILIADO" | "PWLABS_DEAL" | "ACTO_DEMANDA" | "PESSOAL_FINANCE" | "PESSOAL_TAREFA",
   "confianca": 0.95,
   "dados": {
-    // Para GSTORE_PRODUTO:
+    // Para GSTORE_REVENDA:
     "produto": {
-      "titulo": "Notebook Dell Inspiron 15 5590 Core i5 11ª Geração",
-      "marca": "Dell",
-      "modelo": "Inspiron 15 5590",
-      "categoria": "Eletrônicos",
-      "condicao": "USADO_EXCELENTE",
-      "custo_aquisicao": 1800.00,
-      "preco_sugerido_min": 2200.00,
-      "preco_sugerido_max": 2700.00,
-      "margem_estimada_perc": 35.00,
-      "especificacoes": {"processador": "Intel Core i5-1135G7", "ram": "8GB", "ssd": "256GB"},
-      "descricao_anuncio": "Descrição otimizada para OLX...",
+      "titulo": "PlayStation 5 PS5 825GB SSD",
+      "marca": "Sony",
+      "modelo": "PS5",
+      "categoria": "Games",
+      "condicao": "NOVO",
+      "custo_aquisicao": 2400.00,
+      "especificacoes": {"armazenamento": "825GB SSD", "versao": "Digital"},
       "data_aquisicao": "${hoje}"
+    },
+    // Para GSTORE_AFILIADO:
+    "afiliado": {
+      "titulo": "Suporte Articulado para Monitor 14-32 Polegadas",
+      "marca": "Elg",
+      "loja_afiliada": "Amazon",
+      "link_afiliado": "https://..."
     },
     // Para PWLABS_DEAL:
     "deal": {
-      "titulo_deal": "Projeto Trafego - Clinica Sorrir",
-      "empresa": "Clinica Sorrir",
-      "contato_nome": "Dr. Marcos",
-      "valor_estimado": 4500.00,
+      "titulo_deal": "Landing Page - Imobiliária Alfa",
+      "empresa": "Imobiliária Alfa",
+      "contato_nome": "João Silva",
+      "valor_estimado": 4000.00,
       "estagio": "PROPOSTA",
-      "servicos": ["Trafego Pago", "Google Ads"],
-      "proxima_acao": "Enviar proposta comercial"
+      "servicos": ["Landing Page", "Hosting"]
+    },
+    // Para ACTO_DEMANDA:
+    "demanda": {
+      "projeto": "flora",
+      "titulo": "Corrigir responsividade do checkout",
+      "descricao": "O checkout não está adaptando bem em telas menores que 375px",
+      "prioridade": "alta",
+      "estimativa": "2d"
     },
     // Para PESSOAL_FINANCE:
     "transacao": {
       "descricao": "Almoço",
-      "valor": 47.30,
+      "valor": 35.00,
       "tipo": "SAIDA_PAGA",
       "categoria": "Alimentação",
-      "forma_pagamento": "PIX"
+      "forma_pagamento": "DEBITO"
     },
     // Para PESSOAL_TAREFA:
     "tarefa": {
-      "titulo": "Pagar conta de luz",
-      "descricao": "Pagar a conta de luz que vence amanhã",
-      "prioridade": "ALTA",
-      "data_limite": "2025-09-03",
-      "horario": "16:00"
+      "titulo": "Ligar para a contabilidade",
+      "descricao": "Confirmar horário da reunião",
+      "prioridade": "media",
+      "horario": "15:00"
     }
   }
 }`;
@@ -252,7 +275,10 @@ export async function classifyAndExtract(input: string): Promise<ResultadoClassi
   // Processa dados conforme o tipo
   let dadosProcessados: ResultadoClassificacao['dados'] = {};
 
-  if (tipo === 'GSTORE_PRODUTO' && dados.produto) {
+  // GSTORE_REVENDA - Produtos para revenda própria
+  // Também aceita GSTORE_PRODUTO para retrocompatibilidade
+  const safeTipo = tipo as string;
+  if ((safeTipo === 'GSTORE_REVENDA' || safeTipo === 'GSTORE_PRODUTO') && dados.produto) {
     const p = dados.produto;
     const custo = parseSafeNumber(p.custo_aquisicao, 0) || 0;
     const margem = parseSafeNumber(p.margem_estimada_perc, 35) || 35;
@@ -273,7 +299,26 @@ export async function classifyAndExtract(input: string): Promise<ResultadoClassi
       descricao_anuncio: p.descricao_anuncio || null,
       data_aquisicao: p.data_aquisicao || hoje,
     };
-  } else if (tipo === 'PWLABS_DEAL' && dados.deal) {
+  } else if (safeTipo === 'GSTORE_AFILIADO' && dados.afiliado) {
+    // GSTORE_AFILIADO - Produtos de lojas parceiras
+    const a = dados.afiliado;
+    dadosProcessados.afiliado = {
+      titulo: a.titulo || 'Produto Afiliado',
+      marca: a.marca || null,
+      loja_afiliada: a.loja_afiliada || null,
+      link_afiliado: a.link_afiliado || null,
+    };
+  } else if (safeTipo === 'ACTO_DEMANDA' && dados.demanda) {
+    // ACTO_DEMANDA - Demandas de projetos Flora/CityPro
+    const dem = dados.demanda;
+    dadosProcessados.demanda = {
+      projeto: dem.projeto || 'flora',
+      titulo: dem.titulo || 'Nova Demanda',
+      descricao: dem.descricao || null,
+      prioridade: dem.prioridade || 'normal',
+      estimativa: dem.estimativa || null,
+    };
+  } else if (safeTipo === 'PWLABS_DEAL' && dados.deal) {
     const d = dados.deal;
     dadosProcessados.deal = {
       titulo_deal: d.titulo_deal || d.empresa || 'Novo Deal',
@@ -288,7 +333,7 @@ export async function classifyAndExtract(input: string): Promise<ResultadoClassi
       data_proxima_acao: d.data_proxima_acao || null,
       notas: d.notas || null,
     };
-  } else if (tipo === 'PESSOAL_FINANCE' && dados.transacao) {
+  } else if (safeTipo === 'PESSOAL_FINANCE' && dados.transacao) {
     const t = dados.transacao;
     dadosProcessados.transacao = {
       descricao: t.descricao || 'Despesa',
@@ -297,7 +342,7 @@ export async function classifyAndExtract(input: string): Promise<ResultadoClassi
       categoria: t.categoria || 'Outros',
       forma_pagamento: sanitizeForma(t.forma_pagamento) as any,
     };
-  } else if (tipo === 'PESSOAL_TAREFA' && dados.tarefa) {
+  } else if (safeTipo === 'PESSOAL_TAREFA' && dados.tarefa) {
     const tar = dados.tarefa;
     dadosProcessados.tarefa = {
       titulo: tar.titulo || 'Nova Tarefa',
@@ -309,7 +354,7 @@ export async function classifyAndExtract(input: string): Promise<ResultadoClassi
   }
 
   return {
-    tipo: tipo || 'PESSOAL_FINANCE',
+    tipo: (safeTipo as TipoIntento) || 'PESSOAL_FINANCE',
     confianca,
     dados: dadosProcessados,
   };

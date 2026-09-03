@@ -214,8 +214,11 @@ export interface PessoalKPIs {
 // ============================================
 
 export type TipoIntento =
-  | 'GSTORE_PRODUTO'
+  | 'GSTORE_REVENDA'
+  | 'GSTORE_AFILIADO'
+  | 'GSTORE_PRODUTO'  // Retrocompatibilidade
   | 'PWLABS_DEAL'
+  | 'ACTO_DEMANDA'
   | 'PESSOAL_FINANCE'
   | 'PESSOAL_TAREFA';
 
@@ -223,10 +226,25 @@ export interface ResultadoClassificacao {
   tipo: TipoIntento;
   confianca: number;
   dados: {
-    // GSTORE_PRODUTO
+    // GSTORE_REVENDA (estoque próprio)
     produto?: Partial<ProdutoEstoqueInput>;
+    // GSTORE_AFILIADO
+    afiliado?: {
+      titulo: string;
+      marca?: string;
+      loja_afiliada?: string;
+      link_afiliado?: string;
+    };
     // PWLABS_DEAL
     deal?: Partial<CRMDealInput>;
+    // ACTO_DEMANDA
+    demanda?: {
+      projeto: 'flora' | 'citypro' | 'ferramentas';
+      titulo: string;
+      descricao?: string;
+      prioridade?: 'urgente' | 'alta' | 'normal' | 'baixa';
+      estimativa?: string;
+    };
     // PESSOAL_FINANCE
     transacao?: {
       descricao: string;

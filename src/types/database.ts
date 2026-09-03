@@ -237,6 +237,10 @@ export interface Database {
           prioridade: string;
           data_limite: string | null;
           horario: string | null;
+          projeto?: string | null;
+          status?: string | null;
+          estimativa?: string | null;
+          sprint?: string | null;
         };
         Insert: {
           id?: string;
@@ -249,6 +253,10 @@ export interface Database {
           prioridade?: string;
           data_limite?: string | null;
           horario?: string | null;
+          projeto?: string | null;
+          status?: string | null;
+          estimativa?: string | null;
+          sprint?: string | null;
         };
         Update: {
           id?: string;
@@ -261,6 +269,10 @@ export interface Database {
           prioridade?: string;
           data_limite?: string | null;
           horario?: string | null;
+          projeto?: string | null;
+          status?: string | null;
+          estimativa?: string | null;
+          sprint?: string | null;
         };
         Relationships: [];
       };

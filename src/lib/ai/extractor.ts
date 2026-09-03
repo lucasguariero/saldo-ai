@@ -62,7 +62,7 @@ function sanitizeForma(forma: any): FormaPagamento {
   return 'DEBITO';
 }
 
-function parseSafeNumber(val: any, fallback: number | null = null): number | null {
+function parseSafeNumber(val: any, fallback?: number): number | undefined {
   if (val === null || val === undefined || val === '') return fallback;
   if (typeof val === 'number') return isNaN(val) ? fallback : val;
   const cleaned = String(val).replace(/[^0-9.-]+/g, '');
@@ -256,8 +256,8 @@ export async function classifyAndExtract(input: string): Promise<ResultadoClassi
     const p = dados.produto;
     const custo = parseSafeNumber(p.custo_aquisicao, 0) || 0;
     const margem = parseSafeNumber(p.margem_estimada_perc, 35) || 35;
-    const precoMin = parseSafeNumber(p.preco_sugerido_min, custo > 0 ? Math.round(custo * 1.25) : null);
-    const precoMax = parseSafeNumber(p.preco_sugerido_max, custo > 0 ? Math.round(custo * 1.5) : null);
+    const precoMin = parseSafeNumber(p.preco_sugerido_min, custo > 0 ? Math.round(custo * 1.25) : undefined);
+    const precoMax = parseSafeNumber(p.preco_sugerido_max, custo > 0 ? Math.round(custo * 1.5) : undefined);
 
     dadosProcessados.produto = {
       titulo: p.titulo || 'Produto G-Store',

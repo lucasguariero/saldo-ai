@@ -1,64 +1,52 @@
-# Saldo AI — Sistema de Gestão Financeira com Voice AI
+# Saldo AI / Jarvis — CRM Operacional Multi-Workspace
 
 > ⚠️ **DIRETRIZ CRÍTICA DE ARQUITETURA:** 
 > **NÃO UTILIZAMOS TELEGRAM, N8N, NGROK NEM BOTS EXTERNOS.**
-> O Saldo AI é um **Web App nativo (Next.js 16)** com gravação de áudio e comandos de IA integrados diretamente na interface web (`/` e `/api/ai/process-transaction`).
+> O sistema é um **Web App nativo PWA (Next.js 16)** com comandos de voz e IA executados diretamente no navegador/celular via OpenRouter (Gemini 2.5 Flash / GPT-4o-mini) e persistência no Supabase.
 
 ---
 
-## 📌 1. Visão Geral do Projeto
-- **Nome:** Saldo AI
-- **Objetivo:** Painel financeiro pessoal com captura de transações por voz (microfone no navegador/celular) e texto informal, cálculos automáticos de divisões de conta e atualização em tempo real.
-- **Fluxo de Captura:**
-  1. Usuário grava áudio ou digita na barra `VoiceCommandBar` no Dashboard (`/`).
-  2. O componente envia o áudio/texto para a rota `/api/ai/process-transaction`.
-  3. A rota usa **OpenAI Whisper** (`whisper-1`) para transcrever áudio e **GPT-4o-mini** para estruturar a transação em JSON.
-  4. As transações são salvas diretamente no **Supabase** (`public.transacoes`) associadas ao `user_id`.
-  5. O Dashboard atualiza instantaneamente na tela via **Supabase Realtime**.
+## 📌 1. Visão Geral e os 4 Workspaces
+O sistema atua como o cockpit operacional central de 4 ecossistemas:
+1. **🛍️ G-Store (Revenda & Afiliados):**
+   - Entrada de compras de eletrônicos/produtos via voz/texto.
+   - Benchmark real de preços concorrentes via API do Mercado Livre e Google Shopping.
+   - Cálculo de preço de giro rápido (piso) e margem máxima (teto).
+   - Galeria híbrida no Supabase Storage: fotos oficiais de catálogo + fotos reais tiradas pelo iPhone.
+   - Vitrine de Afiliados (sem estoque físico) com comissão tabelada.
+2. **🏢 PW Labs (Agência B2B / Serviços):**
+   - Pipeline de Deals comercial em Kanban: `Prospecção` ➔ `Proposta` ➔ `Produção` ➔ `Fechado`.
+   - Gestão de clientes, valores de propostas e histórico de negociações.
+3. **🎯 Acto (Gestão de Produtos & UX):**
+   - Acompanhamento enxuto de sprints e demandas para as plataformas (Flora, CityPro) estilo Linear.
+4. **👤 Pessoal / Life Admin:**
+   - Fluxo de caixa consolidado, controle de contas a pagar/faturas e tarefas de rotina.
 
 ---
 
 ## 💻 2. Stack Técnica
 - **Framework:** Next.js 16 (App Router), TypeScript, Tailwind CSS v4, Lucide React, Recharts.
 - **UI Components:** shadcn/ui (`card`, `table`, `badge`, `button`, `input`, `select`, `dialog`, `tabs`).
-- **Banco de Dados:** Supabase (PostgreSQL) — Tabela `transacoes` com RLS por `user_id`.
-- **IA / Audio:** OpenAI SDK (`whisper-1` + `gpt-4o-mini`).
+- **Banco de Dados:** Supabase (PostgreSQL) com RLS e Realtime ativo nas tabelas:
+  - `transacoes` (Pessoal)
+  - `produtos_estoque` / `gstore_produtos` (G-Store)
+  - `crm_deals` (PW Labs)
+  - `pessoal_tarefas` / `acto_demandas` (Pessoal e Acto)
+- **Mídia:** Supabase Storage (bucket `gstore-produtos`).
+- **IA / Audio:** OpenRouter API (`google/gemini-2.5-flash` para transcrição de áudio e classificação multimodal).
 
 ---
 
-## 🗄️ 3. Estrutura do Banco (Supabase `transacoes`)
-- `id` (UUID, PK)
-- `created_at` (TIMESTAMPTZ)
-- `user_id` (UUID, FK auth.users)
-- `descricao` (TEXT)
-- `valor` (NUMERIC 10,2) — valor líquido
-- `tipo` (ENUM: `'ENTRADA'`, `'SAIDA_PAGA'`, `'SAIDA_PENDENTE'`)
-- `categoria` (TEXT) — Ex: Alimentação, Mercado, Transporte, Salário, etc.
-- `forma_pagamento` (ENUM: `'PIX'`, `'DEBITO'`, `'CREDITO'`, `'DINHEIRO'`)
-- `observacao` (TEXT) — Contexto original / divisão de conta
-- `data_transacao` (DATE: `YYYY-MM-DD`)
-- `data_vencimento` (DATE: `YYYY-MM-DD`, opcional para pendentes)
+## 📋 3. Roteiro de Tarefas para Execução Modular:
+Quando for instruído a executar uma tarefa, leia o arquivo correspondente na raiz:
+- [`TASK_5_MOBILE_SHELL_BOTTOM_NAV.md`](./TASK_5_MOBILE_SHELL_BOTTOM_NAV.md): Casca Móvel com `BottomNavBar` (safe-area iOS).
+- [`TASK_6_GSTORE_BENCHMARK_STORAGE.md`](./TASK_6_GSTORE_BENCHMARK_STORAGE.md): Motor G-Store, Benchmark Mercado Livre e Storage de Fotos.
+- [`TASK_7_PWLABS_ACTO_WORKSPACES.md`](./TASK_7_PWLABS_ACTO_WORKSPACES.md): Funil Comercial PW Labs e Demandas da Acto.
+- [`TASK_8_JARVIS_DISPATCHER_INBOX.md`](./TASK_8_JARVIS_DISPATCHER_INBOX.md): Dispatcher Central Jarvis e Inbox de Triagem.
 
 ---
 
-## 📂 4. Estrutura de Arquivos Principais
-- `src/app/page.tsx` — Dashboard com SSR e listener do Supabase Realtime.
-- `src/app/login/page.tsx` e `signup/page.tsx` — Autenticação com Supabase Auth.
-- `src/middleware.ts` — Proteção estrita de rotas com autenticação.
-- `src/app/api/ai/process-transaction/route.ts` — Endpoint de processamento de voz/texto com IA.
-- `src/components/dashboard/voice-command-bar.tsx` — Barra com microfone (MediaRecorder), timer e input de texto.
-- `src/components/dashboard/month-selector.tsx` — Seletor dinâmico de mês/ano.
-- `src/components/dashboard/pending-bills-tab.tsx` — Painel de contas a pagar e faturas.
-- `src/components/dashboard/summary-cards.tsx` — 4 KPI Cards (Entradas, Saídas Pagas, Pendentes, Saldo).
-- `src/components/dashboard/transaction-table.tsx` — Extrato com filtros, busca e edição.
-- `src/components/dashboard/cash-flow-chart.tsx` — Gráfico de fluxo financeiro diário (Recharts).
-- `src/components/dashboard/category-breakdown.tsx` — Gastos por categoria com barras de progresso.
-- `src/lib/ai/extractor.ts` — Serviços de transcrição (Whisper) e estruturação de transações (GPT-4o-mini).
-- `src/lib/supabase/client.ts` e `server.ts` — Clientes Supabase.
-
----
-
-## 🔑 5. Variáveis de Ambiente (`.env.local`)
+## 🔑 4. Variáveis de Ambiente (`.env.local` e Vercel)
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `OPENAI_API_KEY`
+- `OPENROUTER_API_KEY`

@@ -9,8 +9,8 @@
 ## ⚡ 1. Comandos Rápidos de Execução (Mobile Shortcuts):
 O usuário está operando pelo celular. Quando ele digitar um comando curto, execute imediatamente lendo o arquivo correspondente na íntegra, sem pedir explicações extras:
 
-- Se o usuário digitar **`spec`** ou **`executar spec`**:
-  $\rightarrow$ Leia [`SPEC_EXECUCAO_CLAUDE_CODE.md`](./SPEC_EXECUCAO_CLAUDE_CODE.md), execute todas as 5 fases atômicas sequencialmente, validando o build e commitando ao final de cada fase.
+- Se o usuário digitar **`spec`**, **`executar spec`** ou **`executar`**:
+  $\rightarrow$ Leia [`SPEC_EXECUCAO_CLAUDE_CODE.md`](./SPEC_EXECUCAO_CLAUDE_CODE.md), execute imediatamente a FASE 1 (Sidebar Linear Desktop, Command Palette Raycast `Cmd+K`, isolamento da BottomNavBar para mobile), valide com `npm run build` e faça o commit e push para o GitHub.
 - Se o usuário digitar **`task 5`** ou **`executar task 5`**:
   $\rightarrow$ Leia [`TASK_5_MOBILE_SHELL_BOTTOM_NAV.md`](./TASK_5_MOBILE_SHELL_BOTTOM_NAV.md), implemente todos os passos, valide com `npm run build` e faça o commit e push para o GitHub.
 - Se o usuário digitar **`task 6`** ou **`executar task 6`**:

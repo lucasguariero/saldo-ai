@@ -95,6 +95,16 @@ export interface Database {
           // Afiliado
           link_afiliado: string | null;
           loja_afiliada: string | null;
+          // Novos campos Flip
+          custo_bruto: number | null;
+          cashback: number | null;
+          custo_liquido: number | null;
+          preco_varejo_referencia: number | null;
+          canais_venda: string[] | null;
+          plataforma_afiliado: string | null;
+          cupom_desconto: string | null;
+          comissao_estimada_reais: number | null;
+          copy_stories: string | null;
         };
         Insert: {
           id?: string;
@@ -130,6 +140,16 @@ export interface Database {
           observacao?: string | null;
           link_afiliado?: string | null;
           loja_afiliada?: string | null;
+          // Novos campos Flip
+          custo_bruto?: number | null;
+          cashback?: number | null;
+          custo_liquido?: number | null;
+          preco_varejo_referencia?: number | null;
+          canais_venda?: string[] | null;
+          plataforma_afiliado?: string | null;
+          cupom_desconto?: string | null;
+          comissao_estimada_reais?: number | null;
+          copy_stories?: string | null;
         };
         Update: {
           id?: string;
@@ -162,9 +182,19 @@ export interface Database {
           canais_anuncio?: string[] | null;
           data_aquisicao?: string;
           data_venda?: string | null;
-          observacao?: string | null;
           link_afiliado?: string | null;
           loja_afiliada?: string | null;
+          // Novos campos Flip
+          custo_bruto?: number | null;
+          cashback?: number | null;
+          custo_liquido?: number | null;
+          preco_varejo_referencia?: number | null;
+          canais_venda?: string[] | null;
+          plataforma_afiliado?: string | null;
+          cupom_desconto?: string | null;
+          comissao_estimada_reais?: number | null;
+          copy_stories?: string | null;
+          observacao?: string | null;
         };
         Relationships: [];
       };

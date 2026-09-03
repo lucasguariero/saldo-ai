@@ -545,6 +545,92 @@ Entrego no local!`;
                           {/* Benchmark */}
                           <BenchmarkCard produto={produto} />
 
+                          {/* Badge de Custo Líquido (com cashback) */}
+                          {(produto.custo_bruto || produto.cashback) && (
+                            <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-2 text-xs">
+                              <div className="flex justify-between">
+                                <span>Custo Real:</span>
+                                <span className="font-semibold text-blue-700 dark:text-blue-300">
+                                  {formatCurrency((produto.custo_bruto || 0) - (produto.cashback || 0))}
+                                </span>
+                              </div>
+                              {produto.cashback ? (
+                                <div className="text-green-600 dark:text-green-400 mt-1">
+                                  💰 Cashback: {formatCurrency(produto.cashback)}
+                                </div>
+                              ) : null}
+                            </div>
+                          )}
+
+                          {/* Indicador de Ancoragem de Preço */}
+                          {produto.preco_varejo_referencia && produto.preco_anunciado && (
+                            <div className="bg-amber-50 dark:bg-amber-950 rounded-lg p-2 text-xs">
+                              <div className="text-muted-foreground mb-1">Ancoragem de Preço</div>
+                              <div className="flex justify-between">
+                                <span>Novo:</span>
+                                <span className="line-through">{formatCurrency(produto.preco_varejo_referencia)}</span>
+                              </div>
+                              <div className="flex justify-between font-semibold">
+                                <span>Anunciado:</span>
+                                <span className="text-green-600">{formatCurrency(produto.preco_anunciado)}</span>
+                              </div>
+                              <div className="text-green-600 font-medium mt-1">
+                                🏷️ Economia de {formatCurrency(produto.preco_varejo_referencia - produto.preco_anunciado)}
+                                ({Math.round((1 - produto.preco_anunciado / produto.preco_varejo_referencia) * 100)}%)
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Canais de Venda (Checkboxes) */}
+                          <div className="text-xs pt-2 border-t">
+                            <span className="text-muted-foreground">Canais:</span>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {(['olx', 'facebook', 'site', 'instagram'] as const).map(canal => {
+                                const canaisAtuais = produto.canais_venda || ['olx', 'facebook'];
+                                const ativo = canaisAtuais.includes(canal);
+                                return (
+                                  <Badge
+                                    key={canal}
+                                    variant={ativo ? 'default' : 'outline'}
+                                    className="cursor-pointer text-[10px]"
+                                    onClick={async () => {
+                                      if (!supabase) return;
+                                      const novosCanais = ativo
+                                        ? canaisAtuais.filter(c => c !== canal)
+                                        : [...canaisAtuais, canal];
+                                      await supabase.from('produtos_estoque').update({ canais_venda: novosCanais }).eq('id', produto.id);
+                                      setProdutos(prev => prev.map(p => p.id === produto.id ? { ...p, canais_venda: novosCanais } : p));
+                                    }}
+                                  >
+                                    {canal === 'olx' ? '🔵 OLX' : canal === 'facebook' ? '📘 FB' : canal === 'site' ? '🌐 Site' : '📸 IG'}
+                                  </Badge>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Botão Copiar Anúncio Ancorado */}
+                          {produto.preco_varejo_referencia && produto.preco_anunciado && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full gap-1 text-xs"
+                              onClick={() => {
+                                const economia = produto.preco_varejo_referencia! - produto.preco_anunciado!;
+                                const texto = `🔥 ${produto.titulo.toUpperCase()} - OPORTUNIDADE\n\n` +
+                                  `Preço de Varejo (Novo): R$ ${produto.preco_varejo_referencia?.toFixed(2)}\n` +
+                                  `Valor na G-Store: APENAS R$ ${produto.preco_anunciado?.toFixed(2)} (Economize R$ ${economia.toFixed(2)})!\n\n` +
+                                  `Condição impecável. Acompanha garantia. Chame no chat!`;
+                                navigator.clipboard.writeText(texto);
+                                setCopiedId(produto.id);
+                                setTimeout(() => setCopiedId(null), 2000);
+                              }}
+                            >
+                              <Copy className="h-3 w-3" />
+                              {copiedId === produto.id ? 'Copiado!' : '📋 Copiar Anúncio Ancorado'}
+                            </Button>
+                          )}
+
                           {/* Info de preço */}
                           <div className="flex justify-between text-sm pt-2 border-t">
                             <span className="text-muted-foreground">Custo:</span>
@@ -611,11 +697,47 @@ Entrego no local!`;
                       )}
                       <div className="flex-1 space-y-2">
                         <h3 className="font-medium text-sm line-clamp-2">{produto.titulo}</h3>
-                        {produto.loja_afiliada && (
-                          <Badge variant="outline" className="text-xs">
-                            {produto.loja_afiliada}
-                          </Badge>
+                        <div className="flex flex-wrap gap-1">
+                          {produto.plataforma_afiliado && (
+                            <Badge variant="outline" className="text-xs">
+                              {produto.plataforma_afiliado === 'shopee' ? '🛒 Shopee' : produto.plataforma_afiliado === 'amazon' ? '📦 Amazon' : '🎵 TikTok'}
+                            </Badge>
+                          )}
+                          {produto.loja_afiliada && (
+                            <Badge variant="outline" className="text-xs">
+                              {produto.loja_afiliada}
+                            </Badge>
+                          )}
+                        </div>
+
+                        {/* Comissão Estimada */}
+                        {produto.comissao_estimada_reais && (
+                          <div className="text-xs text-green-600 font-medium">
+                            💰 Comissão: {formatCurrency(produto.comissao_estimada_reais)}
+                          </div>
                         )}
+
+                        {/* Botão Copiar Copy para Stories */}
+                        {(produto.cupom_desconto || produto.copy_stories) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full gap-1 text-xs"
+                            onClick={() => {
+                              const texto = produto.copy_stories ||
+                                `Achadinho do dia! 🔥 ${produto.titulo}` +
+                                (produto.cupom_desconto ? ` com cupom exclusivo '${produto.cupom_desconto}'.` : '.') +
+                                ` De R$ ${(produto.preco_anunciado || produto.preco_teto_mercado || 0).toFixed(2)} por R$ ${(produto.preco_venda_final || produto.preco_anunciado || 0).toFixed(2)}. Link direto nos Stories / Bio!`;
+                              navigator.clipboard.writeText(texto);
+                              setCopiedId(produto.id);
+                              setTimeout(() => setCopiedId(null), 2000);
+                            }}
+                          >
+                            <Copy className="h-3 w-3" />
+                            {copiedId === produto.id ? 'Copiado!' : '📱 Copy Stories'}
+                          </Button>
+                        )}
+
                         {produto.link_afiliado ? (
                           <a
                             href={produto.link_afiliado}

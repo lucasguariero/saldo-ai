@@ -93,6 +93,21 @@ export function BulkOCRModal({ isOpen, onClose, userId, workspaceId }: BulkOCRMo
     setTransacoes(prev => prev.filter(t => t.id_temp !== id));
   };
 
+  // Alternar entre despesa pessoal e compra da G-Store para reembolso
+  const toggleGStoreReembolso = (idTemp: string) => {
+    setTransacoes((prev) =>
+      prev.map((t) =>
+        t.id_temp === idTemp
+          ? {
+              ...t,
+              is_reembolso_gstore: !t.is_reembolso_gstore,
+              categoria: !t.is_reembolso_gstore ? 'Estoque G-Store' : t.categoria,
+            }
+          : t
+      )
+    );
+  };
+
   // Salvar transações no banco
   const salvarTransacoes = async () => {
     const selecionadas = transacoes.filter(t => t.selecionada);
@@ -110,11 +125,13 @@ export function BulkOCRModal({ isOpen, onClose, userId, workspaceId }: BulkOCRMo
         data_vencimento: t.data_vencimento || null,
         user_id: userId,
         workspace_id: workspaceId,
+        is_reembolso_gstore: t.is_reembolso_gstore || false,
+        reembolso_status: t.is_reembolso_gstore ? 'PENDENTE' : null,
       }));
 
       const { error } = await supabase
         .from('transacoes')
-        .insert(transacoesParaSalvar);
+        .insert(transacoesParaSalvar as any);
 
       if (error) {
         console.error('Erro ao salvar transações:', error);
@@ -146,6 +163,15 @@ export function BulkOCRModal({ isOpen, onClose, userId, workspaceId }: BulkOCRMo
   };
 
   const transacoesSelecionadas = transacoes.filter(t => t.selecionada);
+
+  // Calcular totais segmentados
+  const totalPessoal = transacoesSelecionadas
+    .filter(t => !t.is_reembolso_gstore)
+    .reduce((sum, t) => sum + (t.tipo === 'ENTRADA' ? t.valor : t.valor), 0);
+
+  const totalGStore = transacoesSelecionadas
+    .filter(t => t.is_reembolso_gstore)
+    .reduce((sum, t) => sum + (t.tipo === 'ENTRADA' ? t.valor : t.valor), 0);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -279,6 +305,19 @@ export function BulkOCRModal({ isOpen, onClose, userId, workspaceId }: BulkOCRMo
                     </div>
 
                     <button
+                      type="button"
+                      onClick={() => toggleGStoreReembolso(t.id_temp)}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-colors cursor-pointer ${
+                        t.is_reembolso_gstore
+                          ? 'bg-purple-500/20 text-purple-600 dark:text-purple-400 border-purple-500/40'
+                          : 'bg-muted text-muted-foreground border-border/40 hover:text-foreground'
+                      }`}
+                      title="Alternar entre despesa pessoal e compra da G-Store para reembolso"
+                    >
+                      {t.is_reembolso_gstore ? '🛍️ G-Store (Reembolsar)' : '👤 Pessoal'}
+                    </button>
+
+                    <button
                       onClick={() => removerTransacao(t.id_temp)}
                       className="text-muted-foreground hover:text-red-500"
                     >
@@ -291,8 +330,12 @@ export function BulkOCRModal({ isOpen, onClose, userId, workspaceId }: BulkOCRMo
               {/* Total e Salvar */}
               <div className="flex items-center justify-between pt-4 border-t">
                 <div>
-                  <p className="text-sm text-muted-foreground">Total selecionado</p>
-                  <p className="text-xl font-bold">
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <span>Total Pessoal: <strong className="text-foreground">R$ {totalPessoal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></span>
+                    <span>•</span>
+                    <span>Reembolso G-Store: <strong className="text-purple-600 dark:text-purple-400">R$ {totalGStore.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></span>
+                  </div>
+                  <p className="text-xl font-bold mt-1">
                     R$ {transacoesSelecionadas.reduce((sum, t) => {
                       return t.tipo === 'ENTRADA' ? sum + t.valor : sum - t.valor;
                     }, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}

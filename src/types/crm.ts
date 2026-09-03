@@ -284,6 +284,7 @@ export interface OCRTransacaoExtraida {
   categoria: string;
   forma_pagamento: 'PIX' | 'CREDITO' | 'DEBITO' | 'BOLETO';
   confianca: number;
+  is_reembolso_gstore?: boolean;
 }
 
 // ============================================

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Transacao, NovaTransacaoInput, ResumoFinanceiro, CategoriaGasto, FluxoDia } from '@/types/finance';
 import { Workspace } from '@/types/crm';
 import { WorkspaceId, WORKSPACE_STORAGE_KEY } from '@/types/workspace';
@@ -22,6 +22,8 @@ import { DealsKanban } from '@/components/pwlabs/deals-kanban';
 import { ActoView } from '@/components/acto/acto-view';
 import { DailyBriefingCard } from './daily-briefing-card';
 import { BulkOCRModal } from '@/components/pessoal/bulk-ocr-modal';
+import { ReembolsoCard } from '@/components/pessoal/reembolso-card';
+import { CashflowForecastCard } from '@/components/pessoal/cashflow-forecast-card';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -48,6 +50,7 @@ export function DashboardView({ initialTransacoes = [] }: DashboardViewProps) {
   const [workspaceContadores, setWorkspaceContadores] = useState({ gstore: 0, pwlabs: 0, acto: 0, pessoal: 0 });
   const [isBulkOCROpen, setIsBulkOCROpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [refetchTrigger, setRefetchTrigger] = useState(0);
 
   // Carregar workspace do localStorage ao iniciar
   useEffect(() => {
@@ -154,6 +157,35 @@ export function DashboardView({ initialTransacoes = [] }: DashboardViewProps) {
       }
     };
   }, [supabase]);
+
+  // Função para forçar refetch das transações
+  const fetchTransacoes = useCallback(() => {
+    setRefetchTrigger(prev => prev + 1);
+  }, []);
+
+  // Adicionar refetchTrigger como dependência no useEffect de busca de dados
+  useEffect(() => {
+    if (!supabase || !userId) return;
+
+    async function refetch() {
+      if (!supabase || !userId) return;
+      try {
+        const { data, error } = await supabase
+          .from('transacoes')
+          .select('*')
+          .eq('user_id', userId)
+          .order('data_transacao', { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          setTransacoes(data as Transacao[]);
+        }
+      } catch (err) {
+        console.warn('Could not refetch transactions:', err);
+      }
+    }
+
+    refetch();
+  }, [supabase, userId, refetchTrigger]);
 
   // Filtrar transações do mês selecionado
   const transacoesDoMes = useMemo(() => {
@@ -414,6 +446,19 @@ export function DashboardView({ initialTransacoes = [] }: DashboardViewProps) {
         {workspace === 'pessoal' && (
           <>
             <MonthSelector currentDate={selectedDate} onDateChange={setSelectedDate} />
+
+            {/* Card de Previsão de Fechamento de Mês (Copilot Money) */}
+            <CashflowForecastCard
+              resumo={resumo}
+              transacoesDoMes={transacoesDoMes}
+              currentDate={selectedDate}
+            />
+
+            {/* Card de Conciliação de Compras da G-Store no Cartão Pessoal */}
+            <ReembolsoCard
+              transacoes={transacoes}
+              onReembolsoAtualizado={fetchTransacoes}
+            />
 
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="mb-4">

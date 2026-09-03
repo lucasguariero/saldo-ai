@@ -14,6 +14,10 @@ export interface Transacao {
   data_transacao: string; // YYYY-MM-DD
   data_vencimento?: string | null; // YYYY-MM-DD
   user_id?: string | null;
+  // Conciliação de compras corporativas da G-Store no cartão pessoal
+  is_reembolso_gstore?: boolean;
+  reembolso_status?: 'PENDENTE' | 'REEMBOLSADO' | null;
+  reembolso_data?: string | null;
 }
 
 export type NovaTransacaoInput = Omit<Transacao, 'id' | 'created_at'>;

@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+hotmart/
+hotmart_session/
+*.session.json
+hotmart_credentials.json

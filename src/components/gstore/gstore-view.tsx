@@ -34,6 +34,7 @@ import {
   TipoOperacaoGStore,
   ConcorrenteBenchmark
 } from '@/types/crm';
+import { GStoreProductCard } from './gstore-product-card';
 import { createClient } from '@/lib/supabase/client';
 import { uploadPhoto } from '@/lib/services/storage';
 import { buscarConcorrentesML, calcularPrecos, BenchmarkResultado } from '@/lib/services/mercadolivre';
@@ -495,7 +496,7 @@ Entrego no local!`;
                     </CardContent>
                   </Card>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="space-y-2.5">
                     {produtosPorStatus[status as StatusProdutoGStore].map(produto => (
                       <Card key={produto.id} className="overflow-hidden">
                         <CardHeader className="pb-2">

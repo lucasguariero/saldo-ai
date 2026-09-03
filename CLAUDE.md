@@ -6,7 +6,21 @@
 
 ---
 
-## 📌 1. Visão Geral e os 4 Workspaces
+## ⚡ 1. Comandos Rápidos de Execução (Mobile Shortcuts):
+O usuário está operando pelo celular. Quando ele digitar um comando curto, execute imediatamente lendo o arquivo correspondente na íntegra, sem pedir explicações extras:
+
+- Se o usuário digitar **`task 5`** ou **`executar task 5`**:
+  $\rightarrow$ Leia [`TASK_5_MOBILE_SHELL_BOTTOM_NAV.md`](./TASK_5_MOBILE_SHELL_BOTTOM_NAV.md), implemente todos os passos, valide com `npm run build` e faça o commit e push para o GitHub.
+- Se o usuário digitar **`task 6`** ou **`executar task 6`**:
+  $\rightarrow$ Leia [`TASK_6_GSTORE_BENCHMARK_STORAGE.md`](./TASK_6_GSTORE_BENCHMARK_STORAGE.md), implemente todos os passos, valide com `npm run build` e faça o commit e push para o GitHub.
+- Se o usuário digitar **`task 7`** ou **`executar task 7`**:
+  $\rightarrow$ Leia [`TASK_7_PWLABS_ACTO_WORKSPACES.md`](./TASK_7_PWLABS_ACTO_WORKSPACES.md), implemente todos os passos, valide com `npm run build` e faça o commit e push para o GitHub.
+- Se o usuário digitar **`task 8`** ou **`executar task 8`**:
+  $\rightarrow$ Leia [`TASK_8_JARVIS_DISPATCHER_INBOX.md`](./TASK_8_JARVIS_DISPATCHER_INBOX.md), implemente todos os passos, valide com `npm run build` e faça o commit e push para o GitHub.
+
+---
+
+## 📌 2. Visão Geral e os 4 Workspaces
 O sistema atua como o cockpit operacional central de 4 ecossistemas:
 1. **🛍️ G-Store (Revenda & Afiliados):**
    - Entrada de compras de eletrônicos/produtos via voz/texto.
@@ -24,7 +38,7 @@ O sistema atua como o cockpit operacional central de 4 ecossistemas:
 
 ---
 
-## 💻 2. Stack Técnica
+## 💻 3. Stack Técnica
 - **Framework:** Next.js 16 (App Router), TypeScript, Tailwind CSS v4, Lucide React, Recharts.
 - **UI Components:** shadcn/ui (`card`, `table`, `badge`, `button`, `input`, `select`, `dialog`, `tabs`).
 - **Banco de Dados:** Supabase (PostgreSQL) com RLS e Realtime ativo nas tabelas:
@@ -34,15 +48,6 @@ O sistema atua como o cockpit operacional central de 4 ecossistemas:
   - `pessoal_tarefas` / `acto_demandas` (Pessoal e Acto)
 - **Mídia:** Supabase Storage (bucket `gstore-produtos`).
 - **IA / Audio:** OpenRouter API (`google/gemini-2.5-flash` para transcrição de áudio e classificação multimodal).
-
----
-
-## 📋 3. Roteiro de Tarefas para Execução Modular:
-Quando for instruído a executar uma tarefa, leia o arquivo correspondente na raiz:
-- [`TASK_5_MOBILE_SHELL_BOTTOM_NAV.md`](./TASK_5_MOBILE_SHELL_BOTTOM_NAV.md): Casca Móvel com `BottomNavBar` (safe-area iOS).
-- [`TASK_6_GSTORE_BENCHMARK_STORAGE.md`](./TASK_6_GSTORE_BENCHMARK_STORAGE.md): Motor G-Store, Benchmark Mercado Livre e Storage de Fotos.
-- [`TASK_7_PWLABS_ACTO_WORKSPACES.md`](./TASK_7_PWLABS_ACTO_WORKSPACES.md): Funil Comercial PW Labs e Demandas da Acto.
-- [`TASK_8_JARVIS_DISPATCHER_INBOX.md`](./TASK_8_JARVIS_DISPATCHER_INBOX.md): Dispatcher Central Jarvis e Inbox de Triagem.
 
 ---
 

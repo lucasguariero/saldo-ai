@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,8 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Layers, Leaf, Building2, Wrench, Plus, ArrowRight, CheckCircle2, Circle, Calendar, Flag, X } from 'lucide-react';
+import { Layers, Leaf, Building2, Wrench, Plus, ArrowRight, CheckCircle2, Circle, Calendar, Flag, X, Copy, Sparkles, Image as ImageIcon, Mic, Loader2, Palette, Code } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { ProjetoActo, EngineDesign } from '@/types/crm';
 
 interface ActoViewProps {
   userId: string;
@@ -33,7 +34,7 @@ interface Demanda {
   created_at: string;
   user_id: string;
   workspace_id: string;
-  projeto: 'flora' | 'citypro' | 'ferramentas';
+  projeto: 'inema' | 'eleitores' | 'crm_acto';
   titulo: string;
   descricao?: string;
   status: 'backlog' | 'em_andamento' | 'validacao' | 'entregue';
@@ -44,10 +45,10 @@ interface Demanda {
 }
 
 interface Projeto {
-  id: 'flora' | 'citypro' | 'ferramentas';
+  id: 'inema' | 'eleitores' | 'crm_acto';
   nome: string;
   descricao: string;
-  plataforma: 'Flora' | 'CityPro' | 'Ferramentas';
+  plataforma: 'Inema' | 'Eleitores' | 'CRM Acto';
   icone: React.ReactNode;
   cor: string;
   corBg: string;
@@ -55,28 +56,28 @@ interface Projeto {
 
 const PROJETOS: Projeto[] = [
   {
-    id: 'flora',
-    nome: 'Flora',
-    descricao: 'Plataforma de gestão ambiental e sustentabilidade',
-    plataforma: 'Flora',
+    id: 'inema',
+    nome: 'Inema',
+    descricao: 'Instituto de Meio Ambiente - Gestão ambiental e licenciamento',
+    plataforma: 'Inema',
     icone: <Leaf className="h-5 w-5" />,
     cor: 'text-green-600',
     corBg: 'bg-green-500/20',
   },
   {
-    id: 'citypro',
-    nome: 'CityPro',
-    descricao: 'Plataforma de gestão urbana e municipal',
-    plataforma: 'CityPro',
+    id: 'eleitores',
+    nome: 'Eleitores',
+    descricao: 'Gestão de relacionamento com eleitores e atendimentos',
+    plataforma: 'Eleitores',
     icone: <Building2 className="h-5 w-5" />,
     cor: 'text-blue-600',
     corBg: 'bg-blue-500/20',
   },
   {
-    id: 'ferramentas',
-    nome: 'Ferramentas Internas',
-    descricao: 'Tools e utilitários internos da operação',
-    plataforma: 'Ferramentas',
+    id: 'crm_acto',
+    nome: 'CRM Acto',
+    descricao: 'Plataforma CRM própria da Acto Digital',
+    plataforma: 'CRM Acto',
     icone: <Wrench className="h-5 w-5" />,
     cor: 'text-purple-600',
     corBg: 'bg-purple-500/20',
@@ -101,7 +102,7 @@ export function ActoView({ userId }: ActoViewProps) {
   const supabase = createClient();
   const [demandas, setDemandas] = useState<Demanda[]>([]);
   const [loading, setLoading] = useState(true);
-  const [projetoSelecionado, setProjetoSelecionado] = useState<'flora' | 'citypro' | 'ferramentas'>('flora');
+  const [projetoSelecionado, setProjetoSelecionado] = useState<'inema' | 'eleitores' | 'crm_acto'>('inema');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [novaDemanda, setNovaDemanda] = useState({
     titulo: '',
@@ -110,6 +111,66 @@ export function ActoView({ userId }: ActoViewProps) {
     estimativa: '',
     sprint: '',
   });
+
+  // Estados para geração de specs de design
+  const [engineSelecionada, setEngineSelecionada] = useState<'gemini' | 'claude'>('gemini');
+  const [promptBriefing, setPromptBriefing] = useState('');
+  const [imagemSelecionada, setImagemSelecionada] = useState<string | null>(null);
+  const [gerandoSpec, setGerandoSpec] = useState(false);
+  const [specGerada, setSpecGerada] = useState<{
+    especificacao_markdown?: string;
+    codigo_tailwind?: string;
+    prompt_google_stitch?: string;
+    prompt_figma?: string;
+  } | null>(null);
+  const [isSpecDialogOpen, setIsSpecDialogOpen] = useState(false);
+
+  // Handler para upload de imagem
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagemSelecionada(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Gerar especificação de design
+  const gerarSpec = async () => {
+    if (!promptBriefing) return;
+
+    setGerandoSpec(true);
+    setSpecGerada(null);
+
+    try {
+      const response = await fetch('/api/acto/generate-spec', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projeto: projetoSelecionado,
+          prompt_briefing: promptBriefing,
+          imagem_base64: imagemSelecionada || undefined,
+          engine: engineSelecionada,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.especificacao_markdown) {
+        setSpecGerada(data);
+      }
+    } catch (error) {
+      console.error('Erro ao gerar spec:', error);
+    } finally {
+      setGerandoSpec(false);
+    }
+  };
+
+  // Copiar para clipboard
+  const copiarTexto = (texto: string) => {
+    navigator.clipboard.writeText(texto);
+  };
 
   // Buscar demandas do Supabase
   useEffect(() => {
@@ -173,10 +234,10 @@ export function ActoView({ userId }: ActoViewProps) {
 
   // Contagem por projeto
   const contagemPorProjeto = useMemo(() => {
-    const counts = { flora: 0, citypro: 0, ferramentas: 0 };
+    const counts: Record<string, number> = { inema: 0, eleitores: 0, crm_acto: 0 };
     demandas.forEach(d => {
       if (d.projeto && d.status !== 'entregue') {
-        counts[d.projeto]++;
+        counts[d.projeto] = (counts[d.projeto] || 0) + 1;
       }
     });
     return counts;
@@ -351,6 +412,173 @@ export function ActoView({ userId }: ActoViewProps) {
               <Button onClick={handleCriarDemanda} className="w-full">
                 Criar Demanda
               </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Botão de Gerar Spec de Design */}
+        <Dialog open={isSpecDialogOpen} onOpenChange={setIsSpecDialogOpen}>
+          <DialogTrigger>
+            <Button size="sm" variant="outline" className="gap-2">
+              <Sparkles className="h-4 w-4" />
+              Gerar Spec UI
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Palette className="h-5 w-5" />
+                Gerador de Especificação de Design
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {/* Seletor de Engine */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Engine:</span>
+                <div className="flex gap-1">
+                  <Button
+                    size="sm"
+                    variant={engineSelecionada === 'gemini' ? 'default' : 'outline'}
+                    onClick={() => setEngineSelecionada('gemini')}
+                  >
+                    ✨ Gemini 2.5 Flash
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={engineSelecionada === 'claude' ? 'default' : 'outline'}
+                    onClick={() => setEngineSelecionada('claude')}
+                  >
+                    🤖 Claude 3.5 Sonnet
+                  </Button>
+                </div>
+              </div>
+
+              {/* Campo de Briefing */}
+              <div>
+                <label className="text-sm font-medium">Briefing de Design</label>
+                <Textarea
+                  placeholder="Descreva o que você quer criar: Ex: Um card de métricas com layout horizontal, badge verde para status online, gráficos de linha para..."
+                  value={promptBriefing}
+                  onChange={(e) => setPromptBriefing(e.target.value)}
+                  rows={4}
+                />
+              </div>
+
+              {/* Upload de Imagem */}
+              <div>
+                <label className="text-sm font-medium">Imagem de Referência (opcional)</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    id="acto-image-upload"
+                  />
+                  <label htmlFor="acto-image-upload" className="cursor-pointer">
+                    <Button variant="outline" size="sm">
+                      <ImageIcon className="h-4 w-4 mr-1" />
+                      Upload Print
+                    </Button>
+                  </label>
+                  {imagemSelecionada && (
+                    <div className="relative w-16 h-16 rounded-lg overflow-hidden border">
+                      <img src={imagemSelecionada} alt="Preview" className="w-full h-full object-cover" />
+                      <button
+                        onClick={() => setImagemSelecionada(null)}
+                        className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-0.5"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Botão Gerar */}
+              <Button
+                onClick={gerarSpec}
+                disabled={!promptBriefing || gerandoSpec}
+                className="w-full gap-2"
+              >
+                {gerandoSpec ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Gerando especificação...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    Gerar Especificação
+                  </>
+                )}
+              </Button>
+
+              {/* Resultado */}
+              {specGerada && (
+                <div className="space-y-3 pt-4 border-t">
+                  {specGerada.especificacao_markdown && (
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium">Especificação</span>
+                        <Button size="sm" variant="ghost" onClick={() => copiarTexto(specGerada.especificacao_markdown!)}>
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <div className="bg-muted p-3 rounded-lg text-xs max-h-40 overflow-y-auto">
+                        {specGerada.especificacao_markdown.slice(0, 1000)}...
+                      </div>
+                    </div>
+                  )}
+
+                  {specGerada.codigo_tailwind && (
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium flex items-center gap-1">
+                          <Code className="h-3 w-3" /> Tailwind
+                        </span>
+                        <Button size="sm" variant="ghost" onClick={() => copiarTexto(specGerada.codigo_tailwind!)}>
+                          <Copy className="h-3 w-3" /> Copiar
+                        </Button>
+                      </div>
+                      <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg text-xs overflow-x-auto max-h-40">
+                        {specGerada.codigo_tailwind.slice(0, 500)}...
+                      </pre>
+                    </div>
+                  )}
+
+                  {specGerada.prompt_google_stitch && (
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium">Prompt Google Stitch</span>
+                        <Button size="sm" variant="ghost" onClick={() => copiarTexto(specGerada.prompt_google_stitch!)}>
+                          <Copy className="h-3 w-3" /> Copiar
+                        </Button>
+                      </div>
+                      <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg text-xs">
+                        {specGerada.prompt_google_stitch.slice(0, 300)}...
+                      </div>
+                    </div>
+                  )}
+
+                  {specGerada.prompt_figma && (
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium flex items-center gap-1">
+                          🎨 Prompt Figma
+                        </span>
+                        <Button size="sm" variant="ghost" onClick={() => copiarTexto(specGerada.prompt_figma!)}>
+                          <Copy className="h-3 w-3" /> Copiar
+                        </Button>
+                      </div>
+                      <div className="bg-purple-50 dark:bg-purple-950 p-3 rounded-lg text-xs">
+                        {specGerada.prompt_figma.slice(0, 300)}...
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </DialogContent>
         </Dialog>

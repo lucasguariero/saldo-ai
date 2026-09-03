@@ -62,6 +62,14 @@ function sanitizeForma(forma: any): FormaPagamento {
   return 'DEBITO';
 }
 
+function parseSafeNumber(val: any, fallback: number | null = null): number | null {
+  if (val === null || val === undefined || val === '') return fallback;
+  if (typeof val === 'number') return isNaN(val) ? fallback : val;
+  const cleaned = String(val).replace(/[^0-9.-]+/g, '');
+  const n = parseFloat(cleaned);
+  return isNaN(n) ? fallback : n;
+}
+
 function sanitizeCondicao(condicao: any): string {
   const c = String(condicao || '').toUpperCase();
   if (c.includes('NOVO')) return 'NOVO';
@@ -246,40 +254,45 @@ export async function classifyAndExtract(input: string): Promise<ResultadoClassi
 
   if (tipo === 'GSTORE_PRODUTO' && dados.produto) {
     const p = dados.produto;
+    const custo = parseSafeNumber(p.custo_aquisicao, 0) || 0;
+    const margem = parseSafeNumber(p.margem_estimada_perc, 35) || 35;
+    const precoMin = parseSafeNumber(p.preco_sugerido_min, custo > 0 ? Math.round(custo * 1.25) : null);
+    const precoMax = parseSafeNumber(p.preco_sugerido_max, custo > 0 ? Math.round(custo * 1.5) : null);
+
     dadosProcessados.produto = {
-      titulo: p.titulo || '',
-      marca: p.marca,
-      modelo: p.modelo,
+      titulo: p.titulo || 'Produto G-Store',
+      marca: p.marca || null,
+      modelo: p.modelo || null,
       categoria: p.categoria || 'Eletrônicos',
       condicao: sanitizeCondicao(p.condicao) as any,
-      custo_aquisicao: Number(p.custo_aquisicao) || 0,
-      preco_sugerido_min: Number(p.preco_sugerido_min),
-      preco_sugerido_max: Number(p.preco_sugerido_max),
-      margem_estimada_perc: Number(p.margem_estimada_perc) || 35,
-      especificacoes: p.especificacoes || {},
-      descricao_anuncio: p.descricao_anuncio,
+      custo_aquisicao: custo,
+      preco_sugerido_min: precoMin,
+      preco_sugerido_max: precoMax,
+      margem_estimada_perc: margem,
+      especificacoes: typeof p.especificacoes === 'object' && p.especificacoes !== null ? p.especificacoes : {},
+      descricao_anuncio: p.descricao_anuncio || null,
       data_aquisicao: p.data_aquisicao || hoje,
     };
   } else if (tipo === 'PWLABS_DEAL' && dados.deal) {
     const d = dados.deal;
     dadosProcessados.deal = {
-      titulo_deal: d.titulo_deal || '',
-      empresa: d.empresa,
-      contato_nome: d.contato_nome || '',
-      contato_telefone: d.contato_telefone,
-      contato_email: d.contato_email,
-      valor_estimado: Number(d.valor_estimado) || 0,
+      titulo_deal: d.titulo_deal || d.empresa || 'Novo Deal',
+      empresa: d.empresa || null,
+      contato_nome: d.contato_nome || 'Lead',
+      contato_telefone: d.contato_telefone || null,
+      contato_email: d.contato_email || null,
+      valor_estimado: parseSafeNumber(d.valor_estimado, 0) || 0,
       estagio: sanitizeEstagio(d.estagio) as any,
       servicos: Array.isArray(d.servicos) ? d.servicos : [],
-      proxima_acao: d.proxima_acao,
-      data_proxima_acao: d.data_proxima_acao,
-      notas: d.notas,
+      proxima_acao: d.proxima_acao || null,
+      data_proxima_acao: d.data_proxima_acao || null,
+      notas: d.notas || null,
     };
   } else if (tipo === 'PESSOAL_FINANCE' && dados.transacao) {
     const t = dados.transacao;
     dadosProcessados.transacao = {
-      descricao: t.descricao || '',
-      valor: Math.abs(Number(t.valor) || 0),
+      descricao: t.descricao || 'Despesa',
+      valor: Math.abs(parseSafeNumber(t.valor, 0) || 0),
       tipo: sanitizeTipo(t.tipo) as any,
       categoria: t.categoria || 'Outros',
       forma_pagamento: sanitizeForma(t.forma_pagamento) as any,
@@ -287,11 +300,11 @@ export async function classifyAndExtract(input: string): Promise<ResultadoClassi
   } else if (tipo === 'PESSOAL_TAREFA' && dados.tarefa) {
     const tar = dados.tarefa;
     dadosProcessados.tarefa = {
-      titulo: tar.titulo || '',
-      descricao: tar.descricao,
+      titulo: tar.titulo || 'Nova Tarefa',
+      descricao: tar.descricao || null,
       prioridade: sanitizePrioridade(tar.prioridade) as any,
-      data_limite: tar.data_limite,
-      horario: tar.horario,
+      data_limite: tar.data_limite || null,
+      horario: tar.horario || null,
     };
   }
 

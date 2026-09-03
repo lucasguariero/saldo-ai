@@ -174,8 +174,7 @@ export async function POST(req: NextRequest) {
       }
     } catch (dbErr: any) {
       console.error('Erro ao salvar no Supabase:', dbErr);
-      // Em caso de erro no banco, retorna os dados processados mesmo assim
-      message = 'Processado pela IA, mas erro ao salvar no banco.';
+      message = `Processado pela IA, mas erro ao salvar no banco: ${dbErr?.message || JSON.stringify(dbErr)}`;
     }
 
     return NextResponse.json({

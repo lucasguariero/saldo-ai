@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Sparkles, Plus, Radio, LogOut, User as UserIcon } from 'lucide-react';
+import { Sparkles, Plus, Radio, LogOut, User as UserIcon, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -9,9 +9,11 @@ import { useRouter } from 'next/navigation';
 interface HeaderProps {
   onOpenNewTransaction: () => void;
   isRealtimeConnected: boolean;
+  onOpenCommandPalette?: () => void;
+  activeWorkspace?: string;
 }
 
-export function Header({ onOpenNewTransaction, isRealtimeConnected }: HeaderProps) {
+export function Header({ onOpenNewTransaction, isRealtimeConnected, onOpenCommandPalette, activeWorkspace }: HeaderProps) {
   const router = useRouter();
   const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(null);
   const [user, setUser] = useState<{ email: string } | null>(null);
@@ -66,6 +68,19 @@ export function Header({ onOpenNewTransaction, isRealtimeConnected }: HeaderProp
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Botão Command Palette (Desktop) */}
+          {onOpenCommandPalette && (
+            <button
+              onClick={onOpenCommandPalette}
+              className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs text-muted-foreground bg-secondary/50 hover:bg-secondary border border-border/50 transition-colors cursor-pointer"
+              title="Buscar ou abrir comando (⌘K)"
+            >
+              <Search className="h-3.5 w-3.5" />
+              <span>Buscar ou navegar...</span>
+              <kbd className="text-[10px] font-mono bg-background px-1.5 py-0.5 rounded border border-border">⌘K</kbd>
+            </button>
+          )}
+
           {/* Status Realtime */}
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-secondary/50 px-2.5 py-1 rounded-full border border-border/50">
             <span className={`h-2 w-2 rounded-full ${isRealtimeConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />

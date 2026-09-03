@@ -15,6 +15,8 @@ import { VoiceCommandBar } from './voice-command-bar';
 import { MonthSelector } from './month-selector';
 import { PendingBillsTab } from './pending-bills-tab';
 import { BottomNavBar } from '@/components/layout/bottom-nav-bar';
+import { DesktopSidebar } from '@/components/layout/desktop-sidebar';
+import { CommandPalette } from '@/components/layout/command-palette';
 import { GStoreView } from '@/components/gstore/gstore-view';
 import { DealsKanban } from '@/components/pwlabs/deals-kanban';
 import { ActoView } from '@/components/acto/acto-view';
@@ -45,6 +47,7 @@ export function DashboardView({ initialTransacoes = [] }: DashboardViewProps) {
   const [workspace, setWorkspace] = useState<WorkspaceId>('pessoal');
   const [workspaceContadores, setWorkspaceContadores] = useState({ gstore: 0, pwlabs: 0, acto: 0, pessoal: 0 });
   const [isBulkOCROpen, setIsBulkOCROpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   // Carregar workspace do localStorage ao iniciar
   useEffect(() => {
@@ -65,6 +68,18 @@ export function DashboardView({ initialTransacoes = [] }: DashboardViewProps) {
     } catch (e) {
       console.warn('Supabase credentials not configured yet, using local state mode.', e);
     }
+  }, []);
+
+  // Keyboard shortcut for Command Palette
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   // Get current user and fetch data
@@ -333,13 +348,25 @@ export function DashboardView({ initialTransacoes = [] }: DashboardViewProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col selection:bg-emerald-500/20">
-      <Header
+    <div className="min-h-screen bg-background flex selection:bg-emerald-500/20">
+      {/* Sidebar Desktop Linear */}
+      <DesktopSidebar
+        activeWorkspace={workspace}
+        onWorkspaceChange={handleWorkspaceChange}
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         onOpenNewTransaction={handleOpenNew}
-        isRealtimeConnected={isRealtimeConnected}
       />
 
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 flex-1 max-w-7xl pb-28">
+      {/* Conteúdo Principal */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
+        <Header
+          onOpenNewTransaction={handleOpenNew}
+          isRealtimeConnected={isRealtimeConnected}
+          onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+          activeWorkspace={workspace}
+        />
+
+        <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 flex-1 max-w-7xl pb-28 md:pb-12">
         {/* 1. Daily Briefing Card do Jarvis (Visível no topo com o panorama de todos os negócios) */}
         <DailyBriefingCard
           userId={userId || undefined}
@@ -463,11 +490,21 @@ export function DashboardView({ initialTransacoes = [] }: DashboardViewProps) {
         )}
       </main>
 
-      {/* Bottom Navigation Bar */}
+      {/* Bottom Navigation Bar (Mobile Only) */}
       <BottomNavBar
         activeWorkspace={workspace}
         onWorkspaceChange={handleWorkspaceChange}
         contadores={workspaceContadores}
+      />
+      </div>
+
+      {/* Command Palette Global Cmd+K */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onSelectWorkspace={handleWorkspaceChange}
+        onOpenNewTransaction={handleOpenNew}
+        onOpenOCR={() => setIsBulkOCROpen(true)}
       />
 
       <TransactionModal

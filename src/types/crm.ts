@@ -20,7 +20,19 @@ export type EstagioDealPWlabs =
 
 export type CondicaoProduto = 'NOVO' | 'USADO_EXCELENTE' | 'USADO_BOM' | 'COM_DEFEITO';
 
+export type TipoOperacaoGStore = 'REVENDA_ESTOQUE' | 'AFILIADO';
+
 export type Workspace = 'pwlabs' | 'gstore' | 'pessoal' | 'acto';
+
+// --------------------------------------------
+// Benchmark do Mercado Livre
+// --------------------------------------------
+export interface ConcorrenteBenchmark {
+  titulo: string;
+  preco: number;
+  permalink: string;
+  thumbnail: string;
+}
 
 // ============================================
 // INTERFACES
@@ -35,47 +47,76 @@ export interface ProdutoEstoque {
   updated_at: string;
   user_id: string;
   workspace_id: Workspace;
+  // Tipo de operação (revenda própria ou afiliado)
+  tipo_operacao?: TipoOperacaoGStore;
   titulo: string;
   marca?: string;
   modelo?: string;
   categoria: string;
   condicao: CondicaoProduto;
   custo_aquisicao: number;
+  // Campos de benchmark
+  preco_piso_giro_rapido?: number;
+  preco_teto_mercado?: number;
+  preco_mediana_mercado?: number;
   preco_sugerido_min?: number;
   preco_sugerido_max?: number;
   preco_anunciado?: number;
   preco_venda_final?: number;
   margem_estimada_perc?: number;
+  // Fotos (array separado por tipo)
+  fotos_referencia?: string[];  // URLs de fotos de catálogo
+  fotos_reais?: string[];       // URLs de fotos tiradas pelo celular
+  foto_capa?: string;           // Imagem de destaque
+  // Benchmark de concorrentes (JSONB)
+  benchmark_concorrentes?: ConcorrenteBenchmark[];
+  // Campos existentes
   status: StatusProdutoGStore;
   especificacoes: Record<string, unknown>;
   descricao_anuncio?: string;
-  links_fotos?: string[];
   canais_anuncio?: string[];
   data_aquisicao: string;
   data_venda?: string;
   observacao?: string;
+  // Afiliado
+  link_afiliado?: string;
+  loja_afiliada?: string;
 }
 
 export interface ProdutoEstoqueInput {
+  tipo_operacao?: TipoOperacaoGStore;
   titulo: string;
   marca?: string;
   modelo?: string;
   categoria?: string;
   condicao?: CondicaoProduto;
   custo_aquisicao: number;
+  // Campos de benchmark
+  preco_piso_giro_rapido?: number;
+  preco_teto_mercado?: number;
+  preco_mediana_mercado?: number;
   preco_sugerido_min?: number;
   preco_sugerido_max?: number;
   preco_anunciado?: number;
   preco_venda_final?: number;
   margem_estimada_perc?: number;
+  // Fotos
+  fotos_referencia?: string[];
+  fotos_reais?: string[];
+  foto_capa?: string;
+  // Benchmark
+  benchmark_concorrentes?: ConcorrenteBenchmark[];
+  // Campos existentes
   status?: StatusProdutoGStore;
   especificacoes?: Record<string, unknown>;
   descricao_anuncio?: string;
-  links_fotos?: string[];
   canais_anuncio?: string[];
   data_aquisicao?: string;
   data_venda?: string;
   observacao?: string;
+  // Afiliado
+  link_afiliado?: string;
+  loja_afiliada?: string;
 }
 
 // KPIs da G-Store

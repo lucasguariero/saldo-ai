@@ -61,12 +61,19 @@ export interface Database {
           updated_at: string;
           user_id: string;
           workspace_id: string;
+          // Tipo de operação
+          tipo_operacao: 'REVENDA_ESTOQUE' | 'AFILIADO' | null;
           titulo: string;
           marca: string | null;
           modelo: string | null;
           categoria: string;
           condicao: 'NOVO' | 'USADO_EXCELENTE' | 'USADO_BOM' | 'COM_DEFEITO';
           custo_aquisicao: number;
+          // Campos de benchmark
+          preco_piso_giro_rapido: number | null;
+          preco_teto_mercado: number | null;
+          preco_mediana_mercado: number | null;
+          // Campos existentes
           preco_sugerido_min: number | null;
           preco_sugerido_max: number | null;
           preco_anunciado: number | null;
@@ -75,11 +82,19 @@ export interface Database {
           status: 'COMPRADO_PREPARACAO' | 'PENDENTE_ANUNCIO' | 'ANUNCIADO' | 'VENDIDO' | 'DEVOLVIDO';
           especificacoes: Json;
           descricao_anuncio: string | null;
-          links_fotos: string[] | null;
+          // Fotos
+          fotos_referencia: string[] | null;
+          fotos_reais: string[] | null;
+          foto_capa: string | null;
+          // Benchmark
+          benchmark_concorrentes: Json | null;
           canais_anuncio: string[] | null;
           data_aquisicao: string;
           data_venda: string | null;
           observacao: string | null;
+          // Afiliado
+          link_afiliado: string | null;
+          loja_afiliada: string | null;
         };
         Insert: {
           id?: string;
@@ -87,12 +102,16 @@ export interface Database {
           updated_at?: string;
           user_id: string;
           workspace_id?: string;
+          tipo_operacao?: 'REVENDA_ESTOQUE' | 'AFILIADO' | null;
           titulo: string;
           marca?: string | null;
           modelo?: string | null;
           categoria?: string;
           condicao?: 'NOVO' | 'USADO_EXCELENTE' | 'USADO_BOM' | 'COM_DEFEITO';
           custo_aquisicao: number;
+          preco_piso_giro_rapido?: number | null;
+          preco_teto_mercado?: number | null;
+          preco_mediana_mercado?: number | null;
           preco_sugerido_min?: number | null;
           preco_sugerido_max?: number | null;
           preco_anunciado?: number | null;
@@ -101,11 +120,16 @@ export interface Database {
           status?: 'COMPRADO_PREPARACAO' | 'PENDENTE_ANUNCIO' | 'ANUNCIADO' | 'VENDIDO' | 'DEVOLVIDO';
           especificacoes?: Json;
           descricao_anuncio?: string | null;
-          links_fotos?: string[] | null;
+          fotos_referencia?: string[] | null;
+          fotos_reais?: string[] | null;
+          foto_capa?: string | null;
+          benchmark_concorrentes?: Json | null;
           canais_anuncio?: string[] | null;
           data_aquisicao?: string;
           data_venda?: string | null;
           observacao?: string | null;
+          link_afiliado?: string | null;
+          loja_afiliada?: string | null;
         };
         Update: {
           id?: string;
@@ -113,12 +137,16 @@ export interface Database {
           updated_at?: string;
           user_id?: string;
           workspace_id?: string;
+          tipo_operacao?: 'REVENDA_ESTOQUE' | 'AFILIADO' | null;
           titulo?: string;
           marca?: string | null;
           modelo?: string | null;
           categoria?: string;
           condicao?: 'NOVO' | 'USADO_EXCELENTE' | 'USADO_BOM' | 'COM_DEFEITO';
           custo_aquisicao?: number;
+          preco_piso_giro_rapido?: number | null;
+          preco_teto_mercado?: number | null;
+          preco_mediana_mercado?: number | null;
           preco_sugerido_min?: number | null;
           preco_sugerido_max?: number | null;
           preco_anunciado?: number | null;
@@ -127,11 +155,16 @@ export interface Database {
           status?: 'COMPRADO_PREPARACAO' | 'PENDENTE_ANUNCIO' | 'ANUNCIADO' | 'VENDIDO' | 'DEVOLVIDO';
           especificacoes?: Json;
           descricao_anuncio?: string | null;
-          links_fotos?: string[] | null;
+          fotos_referencia?: string[] | null;
+          fotos_reais?: string[] | null;
+          foto_capa?: string | null;
+          benchmark_concorrentes?: Json | null;
           canais_anuncio?: string[] | null;
           data_aquisicao?: string;
           data_venda?: string | null;
           observacao?: string | null;
+          link_afiliado?: string | null;
+          loja_afiliada?: string | null;
         };
         Relationships: [];
       };

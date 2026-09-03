@@ -29,6 +29,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   ProdutoEstoque,
   StatusProdutoGStore,
+  StatusFlipGStore,
   GStoreKPIs,
   TipoOperacaoGStore,
   ConcorrenteBenchmark
@@ -110,19 +111,25 @@ export function GStoreView({ userId }: GStoreViewProps) {
     };
   }, [produtos]);
 
-  // Produtos por status
+  // Produtos por status (suporta ambos os status: Flip e GStore original)
   const produtosPorStatus = useMemo(() => {
-    const grouped: Record<StatusProdutoGStore, ProdutoEstoque[]> = {
+    const grouped: Record<string, ProdutoEstoque[]> = {
       COMPRADO_PREPARACAO: [],
       PENDENTE_ANUNCIO: [],
       ANUNCIADO: [],
       VENDIDO: [],
       DEVOLVIDO: [],
+      em_transito: [],
+      recebido_sem_fotos: [],
     };
 
     const produtosEstoque = produtos.filter(p => p.tipo_operacao !== 'AFILIADO');
     produtosEstoque.forEach(p => {
-      grouped[p.status].push(p);
+      const status = p.status as string;
+      if (!grouped[status]) {
+        grouped[status] = [];
+      }
+      grouped[status].push(p);
     });
 
     return grouped;
@@ -211,7 +218,8 @@ Entrego no local!`;
       const benchmark = await buscarConcorrentesML(query, condicao);
 
       if (benchmark && supabase) {
-        const precos = calcularPrecos(produto.custo_aquisicao, benchmark);
+        const custo = produto.custo_aquisicao || produto.custo_bruto || 0;
+        const precos = calcularPrecos(custo, benchmark);
 
         await supabase
           .from('produtos_estoque')
@@ -514,8 +522,8 @@ Entrego no local!`;
                         <CardContent className="space-y-3">
                           {/* Carrossel de Fotos */}
                           <div className="space-y-1">
-                            <PhotoCarousel fotos={produto.fotos_referencia} tipo="referencia" />
-                            <PhotoCarousel fotos={produto.fotos_reais} tipo="real" />
+                            <PhotoCarousel fotos={produto.fotos_referencia || undefined} tipo="referencia" />
+                            <PhotoCarousel fotos={produto.fotos_reais || undefined} tipo="real" />
                           </div>
 
                           {/* Botão de upload de foto */}
@@ -540,7 +548,7 @@ Entrego no local!`;
                           {/* Info de preço */}
                           <div className="flex justify-between text-sm pt-2 border-t">
                             <span className="text-muted-foreground">Custo:</span>
-                            <span className="font-medium">{formatCurrency(produto.custo_aquisicao)}</span>
+                            <span className="font-medium">{formatCurrency(produto.custo_aquisicao || produto.custo_bruto || 0)}</span>
                           </div>
                           {produto.preco_teto_mercado && (
                             <div className="flex justify-between text-sm">

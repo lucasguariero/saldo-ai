@@ -276,6 +276,87 @@ export interface Database {
         };
         Relationships: [];
       };
+      acto_specs: {
+        Row: {
+          id: string;
+          created_at: string;
+          user_id: string;
+          projeto: string;
+          titulo: string;
+          prompt_briefing: string | null;
+          imagem_referencia_url: string | null;
+          engine_usada: string;
+          especificacao_markdown: string;
+          codigo_tailwind: string | null;
+          prompt_google_stitch: string | null;
+          prompt_figma: string | null;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          user_id: string;
+          projeto: string;
+          titulo: string;
+          prompt_briefing?: string | null;
+          imagem_referencia_url?: string | null;
+          engine_usada: string;
+          especificacao_markdown: string;
+          codigo_tailwind?: string | null;
+          prompt_google_stitch?: string | null;
+          prompt_figma?: string | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          user_id?: string;
+          projeto?: string;
+          titulo?: string;
+          prompt_briefing?: string | null;
+          imagem_referencia_url?: string | null;
+          engine_usada?: string;
+          especificacao_markdown?: string;
+          codigo_tailwind?: string | null;
+          prompt_google_stitch?: string | null;
+          prompt_figma?: string | null;
+        };
+        Relationships: [];
+      };
+      pwlabs_campanhas: {
+        Row: {
+          id: string;
+          created_at: string;
+          user_id: string;
+          titulo: string;
+          assunto: string;
+          conteudo_html: string;
+          tags_segmentacao: string[] | null;
+          total_enviados: number | null;
+          status: string | null;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          user_id: string;
+          titulo: string;
+          assunto: string;
+          conteudo_html: string;
+          tags_segmentacao?: string[] | null;
+          total_enviados?: number | null;
+          status?: string | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          user_id?: string;
+          titulo?: string;
+          assunto?: string;
+          conteudo_html?: string;
+          tags_segmentacao?: string[] | null;
+          total_enviados?: number | null;
+          status?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;

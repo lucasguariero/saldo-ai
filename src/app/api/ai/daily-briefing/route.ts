@@ -25,8 +25,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Obter usuário autenticado
-    const { data: { user } } = await supabase.auth.getUser();
+    // Obter usuário autenticado (cookies ou Bearer token)
+    let user = null;
+    const authHeader = request.headers.get('authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      const { data } = await supabase.auth.getUser(token);
+      if (data?.user) {
+        user = data.user;
+      }
+    }
+
+    if (!user) {
+      const { data: { user: cookieUser } } = await supabase.auth.getUser();
+      user = cookieUser;
+    }
 
     if (!user) {
       return NextResponse.json(

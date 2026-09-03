@@ -7,18 +7,29 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Transacao } from '@/types/finance';
 import { formatCurrency, getTipoConfig } from '@/lib/formatters';
+import { WorkspaceId } from '@/types/workspace';
+import { TipoIntento } from '@/types/crm';
+import { TriageCard } from './triage-card';
 
 interface VoiceCommandBarProps {
-  onTransactionAdded: (transacoes: Transacao[]) => void;
+  onTransactionAdded?: (transacoes: Transacao[]) => void;
+  onWorkspaceSwitch?: (workspace: WorkspaceId) => void;
+  currentWorkspace?: WorkspaceId;
 }
 
-export function VoiceCommandBar({ onTransactionAdded }: VoiceCommandBarProps) {
+export function VoiceCommandBar({ onTransactionAdded, onWorkspaceSwitch, currentWorkspace }: VoiceCommandBarProps) {
   const [inputText, setInputText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [status, setStatus] = useState<'idle' | 'recording' | 'transcribing' | 'processing' | 'success' | 'error'>('idle');
   const [statusMessage, setStatusMessage] = useState('');
   const [lastProcessed, setLastProcessed] = useState<{ rawText: string; transacoes: any[] } | null>(null);
+  const [triageResult, setTriageResult] = useState<{
+    tipo: TipoIntento;
+    transcricao?: string;
+    confianca?: number;
+    dados: any;
+  } | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -175,18 +186,27 @@ export function VoiceCommandBar({ onTransactionAdded }: VoiceCommandBarProps) {
     }
   };
 
-  const handleSuccess = (data: { rawText: string; transacoes?: any[]; message?: string; intentType?: string }) => {
+  const handleSuccess = (data: { rawText: string; transacoes?: any[]; message?: string; intentType?: string; data?: any }) => {
     setStatus('success');
     setStatusMessage(data.message || 'Registrado com sucesso!');
     setLastProcessed(data as any);
-    if (data.transacoes && data.transacoes.length > 0) {
+    if (data.transacoes && data.transacoes.length > 0 && onTransactionAdded) {
       onTransactionAdded(data.transacoes);
+    }
+
+    if (data.intentType) {
+      setTriageResult({
+        tipo: data.intentType as TipoIntento,
+        transcricao: data.rawText,
+        confianca: 0.95,
+        dados: data.data || {},
+      });
     }
 
     setTimeout(() => {
       setStatus('idle');
       setStatusMessage('');
-    }, 6000);
+    }, 4000);
   };
 
   return (
@@ -343,6 +363,26 @@ export function VoiceCommandBar({ onTransactionAdded }: VoiceCommandBarProps) {
             </button>
           </div>
         </Card>
+      )}
+
+      {/* Card de Triagem Inteligente do Jarvis */}
+      {triageResult && (
+        <TriageCard
+          resultado={triageResult}
+          onConfirm={async (override) => {
+            const target = override || (
+              triageResult.tipo.startsWith('GSTORE') ? 'gstore' :
+              triageResult.tipo.startsWith('PWLABS') ? 'pwlabs' :
+              triageResult.tipo.startsWith('ACTO') ? 'acto' : 'pessoal'
+            );
+            if (onWorkspaceSwitch) {
+              onWorkspaceSwitch(target as WorkspaceId);
+            }
+            setTriageResult(null);
+          }}
+          onCancel={() => setTriageResult(null)}
+          autoConfirmDelay={6000}
+        />
       )}
     </div>
   );

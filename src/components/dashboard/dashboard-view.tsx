@@ -18,10 +18,11 @@ import { BottomNavBar } from '@/components/layout/bottom-nav-bar';
 import { GStoreView } from '@/components/gstore/gstore-view';
 import { DealsKanban } from '@/components/pwlabs/deals-kanban';
 import { ActoView } from '@/components/acto/acto-view';
+import { DailyBriefingCard } from './daily-briefing-card';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, ListOrdered } from 'lucide-react';
+import { Calendar, ListOrdered, Loader2 } from 'lucide-react';
 import { MOCK_TRANSACOES } from '@/lib/mock-data';
 
 interface DashboardViewProps {
@@ -336,22 +337,52 @@ export function DashboardView({ initialTransacoes = [] }: DashboardViewProps) {
       />
 
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 flex-1 max-w-7xl pb-28">
-        {/* Renderiza conforme o workspace selecionado */}
-        {workspace === 'gstore' && userId && (
-          <GStoreView userId={userId} />
+        {/* 1. Daily Briefing Card do Jarvis (Visível no topo com o panorama de todos os negócios) */}
+        <DailyBriefingCard
+          userId={userId || undefined}
+          onNavigateWorkspace={handleWorkspaceChange}
+        />
+
+        {/* 2. Barra Universal do Jarvis (Visível em TODOS os workspaces!) */}
+        <VoiceCommandBar
+          onTransactionAdded={handleVoiceTransactionAdded}
+          onWorkspaceSwitch={handleWorkspaceChange}
+          currentWorkspace={workspace}
+        />
+
+        {/* 3. Renderiza conforme o workspace selecionado */}
+        {workspace === 'gstore' && (
+          userId ? (
+            <GStoreView userId={userId} />
+          ) : (
+            <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin mr-2 text-emerald-500" /> Carregando estoque da G-Store...
+            </div>
+          )
         )}
 
-        {workspace === 'pwlabs' && userId && (
-          <DealsKanban userId={userId} />
+        {workspace === 'pwlabs' && (
+          userId ? (
+            <DealsKanban userId={userId} />
+          ) : (
+            <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin mr-2 text-primary" /> Carregando funil da PW Labs...
+            </div>
+          )
         )}
 
-        {workspace === 'acto' && userId && (
-          <ActoView userId={userId} />
+        {workspace === 'acto' && (
+          userId ? (
+            <ActoView userId={userId} />
+          ) : (
+            <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin mr-2 text-indigo-500" /> Carregando projetos da Acto...
+            </div>
+          )
         )}
 
         {workspace === 'pessoal' && (
           <>
-            <VoiceCommandBar onTransactionAdded={handleVoiceTransactionAdded} />
             <MonthSelector currentDate={selectedDate} onDateChange={setSelectedDate} />
 
             <Tabs value={activeTab} onValueChange={setActiveTab}>

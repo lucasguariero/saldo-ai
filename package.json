@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "spec": "echo Leia o arquivo SPEC_EXECUCAO_CLAUDE_CODE.md para instrucoes de execucao"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

@@ -19,10 +19,12 @@ import { GStoreView } from '@/components/gstore/gstore-view';
 import { DealsKanban } from '@/components/pwlabs/deals-kanban';
 import { ActoView } from '@/components/acto/acto-view';
 import { DailyBriefingCard } from './daily-briefing-card';
+import { BulkOCRModal } from '@/components/pessoal/bulk-ocr-modal';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, ListOrdered, Loader2 } from 'lucide-react';
+import { Calendar, ListOrdered, Loader2, ScanLine } from 'lucide-react';
 import { MOCK_TRANSACOES } from '@/lib/mock-data';
 
 interface DashboardViewProps {
@@ -42,6 +44,7 @@ export function DashboardView({ initialTransacoes = [] }: DashboardViewProps) {
   const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(null);
   const [workspace, setWorkspace] = useState<WorkspaceId>('pessoal');
   const [workspaceContadores, setWorkspaceContadores] = useState({ gstore: 0, pwlabs: 0, acto: 0, pessoal: 0 });
+  const [isBulkOCROpen, setIsBulkOCROpen] = useState(false);
 
   // Carregar workspace do localStorage ao iniciar
   useEffect(() => {
@@ -403,6 +406,18 @@ export function DashboardView({ initialTransacoes = [] }: DashboardViewProps) {
               </TabsList>
 
               <TabsContent value="overview" className="space-y-6 mt-0">
+                {/* Bulk OCR Button */}
+                {workspace === 'pessoal' && (
+                  <Button
+                    variant="outline"
+                    className="w-full gap-2"
+                    onClick={() => setIsBulkOCROpen(true)}
+                  >
+                    <ScanLine className="h-4 w-4" />
+                    📷 Escanear Extrato em Lote (OCR)
+                  </Button>
+                )}
+
                 <SummaryCards resumo={resumo} />
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-2">
@@ -461,6 +476,14 @@ export function DashboardView({ initialTransacoes = [] }: DashboardViewProps) {
         onSave={handleSaveTransaction}
         initialData={editingTransaction}
         defaultDate={editingTransaction ? undefined : selectedDate.toISOString().split('T')[0]}
+      />
+
+      {/* Bulk OCR Modal */}
+      <BulkOCRModal
+        isOpen={isBulkOCROpen}
+        onClose={() => setIsBulkOCROpen(false)}
+        userId={userId || ''}
+        workspaceId={workspace}
       />
     </div>
   );

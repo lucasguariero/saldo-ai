@@ -48,18 +48,11 @@ export async function middleware(request: NextRequest) {
   const publicRoutes = ['/login', '/signup', '/manifest.json', '/favicon.ico'];
   const isPublicRoute =
     publicRoutes.includes(request.nextUrl.pathname) ||
-    request.nextUrl.pathname.startsWith('/icons/');
+    request.nextUrl.pathname.startsWith('/icons/') ||
+    request.nextUrl.pathname.startsWith('/api/');
 
   // If user is not authenticated and trying to access protected route
   if (!user && !isPublicRoute) {
-    // Para rotas de API, retorne JSON 401 em vez de redirecionar para HTML de login
-    if (request.nextUrl.pathname.startsWith('/api/')) {
-      return NextResponse.json(
-        { success: false, error: 'Usuário não autenticado. Faça login para continuar.' },
-        { status: 401 }
-      );
-    }
-
     const redirectUrl = new URL('/login', request.url);
     redirectUrl.searchParams.set('redirect', request.nextUrl.pathname);
     return NextResponse.redirect(redirectUrl);

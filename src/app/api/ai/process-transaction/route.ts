@@ -15,9 +15,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    let user = null;
+    const authHeader = req.headers.get('authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      const { data } = await supabase.auth.getUser(token);
+      if (data?.user) {
+        user = data.user;
+      }
+    }
 
-    if (authError || !user) {
+    if (!user) {
+      const { data: { user: cookieUser } } = await supabase.auth.getUser();
+      user = cookieUser;
+    }
+
+    if (!user) {
       return NextResponse.json(
         { success: false, error: 'Usuário não autenticado. Faça login para continuar.' },
         { status: 401 }

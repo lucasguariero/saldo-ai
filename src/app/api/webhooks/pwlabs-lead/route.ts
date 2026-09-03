@@ -45,37 +45,47 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Criar cliente Supabase
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    // Criar cliente Supabase (usar service_role para webhook backend autônomo)
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-    if (!supabaseUrl || !supabaseKey) {
+    if (!supabaseUrl) {
       return NextResponse.json(
         { error: 'Configuração do Supabase ausente' },
         { status: 500 }
       );
     }
 
-    const supabase = require('@supabase/supabase-js').createClient(supabaseUrl, supabaseKey);
+    const { createClient } = require('@supabase/supabase-js');
+    const supabase = createClient(supabaseUrl, serviceKey || anonKey);
 
-    // Buscar user_id do admin (ou primeiro usuário)
-    const { data: { user } } = await supabase.auth.getUser();
+    let userId: string | null = null;
 
-    let userId = user?.id;
+    if (serviceKey) {
+      try {
+        const { data: userList } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1 });
+        if (userList?.users?.[0]?.id) {
+          userId = userList.users[0].id;
+        }
+      } catch (e) {
+        console.warn('Falha ao listar usuários via admin API:', e);
+      }
+    }
 
     if (!userId) {
-      // Tentar buscar qualquer usuário existente
-      const { data: users } = await supabase
-        .from('user_settings')
-        .select('user_id')
-        .limit(1);
+      const { data: existingDeal } = await supabase.from('crm_deals').select('user_id').limit(1).maybeSingle();
+      if (existingDeal?.user_id) userId = existingDeal.user_id;
+    }
 
-      userId = users?.[0]?.user_id;
+    if (!userId) {
+      const { data: existingTrans } = await supabase.from('transacoes').select('user_id').limit(1).maybeSingle();
+      if (existingTrans?.user_id) userId = existingTrans.user_id;
     }
 
     if (!userId) {
       return NextResponse.json(
-        { error: 'Nenhum usuário encontrado no sistema' },
+        { error: 'Nenhum usuário proprietário encontrado no sistema' },
         { status: 500 }
       );
     }
